@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+scikit-learn
+pandas
+numpy
+openai
+langchain
+langchain-openai
+langchain-community
+chromadb
+pydantic
+pydantic-settings
+python-dotenv
+httpx
+pytest
