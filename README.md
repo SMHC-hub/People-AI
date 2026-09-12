@@ -93,7 +93,6 @@ PeopleAI delivers 10 dedicated, production-ready modules connected to real enter
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/kasidit-wansudon/ai-hr-analytics.git
 cd ai-hr-analytics
 
 # 2. Launch all 5 containers via Docker Compose
