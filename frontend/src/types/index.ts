@@ -2,7 +2,8 @@ export interface User {
   id: number
   email: string
   full_name: string
-  role: 'admin' | 'manager' | 'employee'
+  role: 'admin' | 'hr_manager' | 'hr_analyst' | 'manager' | 'employee'
+  organization_id?: number
   is_active: boolean
   created_at: string
 }
@@ -21,6 +22,22 @@ export interface Position {
   level: string
 }
 
+export interface Location {
+  id: number
+  name: string
+  city: string
+  country: string
+  timezone: string
+}
+
+export interface Organization {
+  id: number
+  name: string
+  domain: string
+  plan: string
+  settings?: Record<string, any>
+}
+
 export interface Employee {
   id: number
   employee_id: string
@@ -34,6 +51,13 @@ export interface Employee {
   hire_date: string
   manager_id: number | null
   salary: number
+  location_id?: number
+  job_satisfaction?: number
+  performance_score?: number
+  years_at_company?: number
+  years_since_last_promotion?: number
+  overtime_hours_avg?: number
+  attrition_risk_score?: number
   created_at: string
   updated_at: string
 }
@@ -45,9 +69,10 @@ export interface Attendance {
   date: string
   check_in: string | null
   check_out: string | null
-  status: 'present' | 'absent' | 'late' | 'half_day'
+  status: 'present' | 'absent' | 'late' | 'half_day' | 'on_leave'
   hours_worked: number | null
   is_anomaly: boolean
+  anomaly_score?: number
   anomaly_reason: string | null
 }
 
@@ -90,10 +115,135 @@ export interface LeavePrediction {
   reason: string
 }
 
+export interface Payroll {
+  id: number
+  employee_id: number
+  employee?: {
+    id: number
+    employee_id: string
+    first_name: string
+    last_name: string
+    department: string
+    position: string
+  }
+  month: string
+  base_salary: number
+  overtime_hours: number
+  overtime_pay: number
+  bonus: number
+  deductions: number
+  net_salary: number
+  payment_method: string
+  is_anomaly: boolean
+  anomaly_type?: string
+  anomaly_score?: number
+  anomaly_explanation?: string
+  review_status: 'pending' | 'reviewed' | 'escalated'
+  created_at: string
+}
+
+export interface PayrollStats {
+  total_payrolls_period: number
+  total_payout: number
+  avg_net_salary: number
+  total_overtime_pay: number
+  total_anomalies: number
+  pending_reviews: number
+}
+
+export interface PerformanceReview {
+  id: number
+  employee_id: number
+  reviewer_id: number
+  employee?: {
+    id: number
+    first_name: string
+    last_name: string
+    department: string
+    position: string
+  }
+  reviewer?: {
+    id: number
+    full_name: string
+  }
+  review_period: string
+  rating: number
+  goals_met: number
+  promotion_recommended: boolean
+  notes: string
+  created_at: string
+}
+
+export interface PerformanceStats {
+  total_reviews: number
+  avg_rating: number
+  promotion_recommendation_rate: number
+  rating_distribution: Record<string, number>
+}
+
+export interface WorkforceStats {
+  total_employees: number
+  active_employees: number
+  on_leave_employees: number
+  high_risk_count: number
+  medium_risk_count: number
+  low_risk_count: number
+  overall_health_score: number
+  avg_turnover_risk: number
+  avg_job_satisfaction: number
+}
+
+export interface DepartmentRisk {
+  department: string
+  employee_count: number
+  high_risk_count: number
+  risk_percentage: number
+  avg_satisfaction: number
+  avg_years_promotion: number
+}
+
+export interface WorkforceInsight {
+  id: string
+  type: 'warning' | 'alert' | 'positive' | 'info'
+  title: string
+  description: string
+  recommendation: string
+  impact_level: 'critical' | 'high' | 'medium' | 'low'
+  affected_department?: string
+}
+
+export interface ModelVersion {
+  id: number
+  model_name: string
+  model_type: string
+  version: string
+  algorithm: string
+  accuracy: number
+  f1_score: number
+  roc_auc: number
+  status: 'active' | 'candidate' | 'archived'
+  feature_importance: Record<string, number>
+  training_data_summary?: Record<string, any>
+  created_at: string
+}
+
+export interface AuditLog {
+  id: number
+  user_id?: number
+  user_name?: string
+  user_email?: string
+  action: string
+  entity_type: string
+  entity_id?: number
+  ip_address: string
+  details?: Record<string, any>
+  created_at: string
+}
+
 export interface Report {
   id: number
   title: string
-  type: 'attendance' | 'turnover' | 'leave' | 'performance' | 'department'
+  type: 'attendance' | 'turnover' | 'leave' | 'performance' | 'department' | 'payroll'
   status: 'generating' | 'ready' | 'failed'
   date_range_start: string
   date_range_end: string
@@ -102,19 +252,34 @@ export interface Report {
   created_at: string
 }
 
+export interface Citation {
+  document_title: string
+  source_type: string
+  relevance_score: number
+  content_snippet: string
+}
+
 export interface ChatMessage {
   id: string
   content: string
   role: 'user' | 'assistant'
   timestamp: string
-  is_policy_question: boolean
+  is_policy_question?: boolean
+  citations?: Citation[]
+}
+
+export interface RiskFactor {
+  name: string
+  impact: number
+  description: string
 }
 
 export interface RiskScore {
   employee_id: number
   score: number
   level: 'low' | 'medium' | 'high' | 'critical'
-  factors: string[]
+  factors: (string | RiskFactor)[]
+  shap_values?: Record<string, number>
   last_updated: string
 }
 

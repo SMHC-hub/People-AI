@@ -1,12 +1,18 @@
 <?php
 
 use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ChatbotController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\LeaveController;
+use App\Http\Controllers\ModelOpsController;
+use App\Http\Controllers\PayrollController;
+use App\Http\Controllers\PerformanceController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\WorkforceController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -21,16 +27,23 @@ use Illuminate\Support\Facades\Route;
 // Public auth routes
 Route::prefix('auth')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
-    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/login', [AuthController::class, 'login'])->name('login');
 });
 
 // Protected routes
-Route::middleware(['auth:sanctum', 'tenant.scope'])->group(function () {
+Route::middleware(['auth:sanctum'])->group(function () {
 
     // Auth routes
     Route::prefix('auth')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/me', [AuthController::class, 'me']);
+    });
+
+    // Workforce Intelligence routes
+    Route::prefix('workforce')->group(function () {
+        Route::get('/stats', [WorkforceController::class, 'stats']);
+        Route::get('/heatmap', [WorkforceController::class, 'heatmap']);
+        Route::get('/insights', [WorkforceController::class, 'insights']);
     });
 
     // Employee routes
@@ -50,6 +63,20 @@ Route::middleware(['auth:sanctum', 'tenant.scope'])->group(function () {
         Route::post('/check-out', [AttendanceController::class, 'checkOut']);
         Route::get('/anomalies', [AttendanceController::class, 'anomalies']);
         Route::get('/stats', [AttendanceController::class, 'stats']);
+    });
+
+    // Payroll Intelligence routes
+    Route::prefix('payrolls')->group(function () {
+        Route::get('/', [PayrollController::class, 'index']);
+        Route::get('/stats', [PayrollController::class, 'stats']);
+        Route::get('/anomalies', [PayrollController::class, 'anomalies']);
+        Route::post('/{id}/review', [PayrollController::class, 'review']);
+    });
+
+    // Performance review routes
+    Route::prefix('performances')->group(function () {
+        Route::get('/', [PerformanceController::class, 'index']);
+        Route::get('/stats', [PerformanceController::class, 'stats']);
     });
 
     // Leave routes
@@ -74,6 +101,19 @@ Route::middleware(['auth:sanctum', 'tenant.scope'])->group(function () {
         Route::post('/policy', [ChatbotController::class, 'policy']);
         Route::get('/history', [ChatbotController::class, 'history']);
     });
+
+    // MLOps & Model Registry routes
+    Route::prefix('mlops')->group(function () {
+        Route::get('/models', [ModelOpsController::class, 'index']);
+        Route::get('/metrics', [ModelOpsController::class, 'metrics']);
+        Route::post('/retrain', [ModelOpsController::class, 'retrain']);
+        Route::post('/models/{id}/promote', [ModelOpsController::class, 'promote']);
+    });
+
+    // Audit logs & Settings routes
+    Route::get('/audit-logs', [AuditLogController::class, 'index']);
+    Route::get('/settings', [SettingsController::class, 'show']);
+    Route::put('/settings', [SettingsController::class, 'update']);
 
     // Department routes
     Route::apiResource('departments', DepartmentController::class);

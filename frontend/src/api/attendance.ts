@@ -42,3 +42,6 @@ export async function getStats(params?: {
   const { data } = await client.get<AttendanceStats>('/attendance/stats', { params })
   return data
 }
+
+export const getAttendanceStats = getStats
+

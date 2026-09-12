@@ -40,15 +40,25 @@ class RAGChatbot:
             logger.warning(f"Failed to initialize ChromaDB: {e}")
             self._collection = None
 
-        # Initialize OpenAI client
-        if settings.OPENAI_API_KEY:
+        # Initialize LLM client (Groq or OpenAI)
+        api_key = settings.GROQ_API_KEY or settings.OPENAI_API_KEY
+        self._model = "openai/gpt-oss-120b"
+        if api_key:
             try:
                 from openai import OpenAI
 
-                self._openai_client = OpenAI(api_key=settings.OPENAI_API_KEY)
-                logger.info("OpenAI client initialized successfully.")
+                if api_key.startswith("gsk_") or bool(settings.GROQ_API_KEY):
+                    self._openai_client = OpenAI(
+                        api_key=api_key,
+                        base_url="https://api.groq.com/openai/v1",
+                    )
+                    self._model = settings.LLM_MODEL or "openai/gpt-oss-120b"
+                else:
+                    self._openai_client = OpenAI(api_key=api_key)
+                    self._model = "gpt-4o"
+                logger.info("LLM client initialized successfully with model %s.", self._model)
             except Exception as e:
-                logger.warning(f"Failed to initialize OpenAI client: {e}")
+                logger.warning(f"Failed to initialize LLM client: {e}")
                 self._openai_client = None
 
         # Load sample documents on startup
@@ -236,7 +246,7 @@ class RAGChatbot:
 
         try:
             response = self._openai_client.chat.completions.create(
-                model="gpt-4o",
+                model=self._model,
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt},

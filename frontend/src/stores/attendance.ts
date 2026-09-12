@@ -24,11 +24,11 @@ export const useAttendanceStore = defineStore('attendance', () => {
   }) {
     loading.value = true
     try {
-      const response = await attendanceApi.getAttendance(params)
-      records.value = response.items
-      totalCount.value = response.total
-      currentPage.value = response.page
-      totalPages.value = response.total_pages
+      const response: any = await attendanceApi.getAttendance(params)
+      records.value = response.items || response.data || (Array.isArray(response) ? response : [])
+      totalCount.value = response.total ?? records.value.length
+      currentPage.value = response.page ?? response.current_page ?? 1
+      totalPages.value = response.total_pages ?? response.last_page ?? 1
     } finally {
       loading.value = false
     }
@@ -37,7 +37,8 @@ export const useAttendanceStore = defineStore('attendance', () => {
   async function fetchAnomalies(params?: { date_from?: string; date_to?: string }) {
     loadingAnomalies.value = true
     try {
-      anomalies.value = await attendanceApi.getAnomalies(params)
+      const response: any = await attendanceApi.getAnomalies(params)
+      anomalies.value = Array.isArray(response) ? response : (response?.items || response?.data || [])
     } finally {
       loadingAnomalies.value = false
     }

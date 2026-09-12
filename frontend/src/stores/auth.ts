@@ -14,9 +14,13 @@ export const useAuthStore = defineStore('auth', () => {
     loading.value = true
     try {
       const response = await authApi.login({ email, password })
-      token.value = response.access_token
-      user.value = response.user
-      localStorage.setItem('auth_token', response.access_token)
+      const tokenVal = response.access_token || (response as any).token || (response as any)?.data?.token
+      const userVal = response.user || (response as any)?.data?.user
+      token.value = tokenVal
+      user.value = userVal
+      if (tokenVal) {
+        localStorage.setItem('auth_token', tokenVal)
+      }
     } finally {
       loading.value = false
     }

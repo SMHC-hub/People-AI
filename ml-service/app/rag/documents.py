@@ -115,6 +115,19 @@ Company Code of Conduct - Effective January 2024
    - Employees have the right to appeal disciplinary decisions through HR.
 """
 
+PROFESSIONAL_DEVELOPMENT_POLICY = """
+Company Professional Development Policy - Effective January 2024
+
+1. Annual Learning Stipend
+   - All full-time employees receive a $2,500 annual learning stipend for eligible education and professional growth.
+   - Eligible expenses include conferences, accredited courses, industry certifications, and books.
+   - Requests must be submitted via the HR portal and approved by direct managers.
+
+2. Certification Reimbursement
+   - Full reimbursement is provided for first-time exam attempts on approved technical and professional certifications.
+   - Employees are granted up to 3 paid study days per calendar year for certification preparation.
+"""
+
 # All documents collected for easy iteration
 SAMPLE_DOCUMENTS = [
     {
@@ -134,5 +147,11 @@ SAMPLE_DOCUMENTS = [
         "title": "Company Code of Conduct",
         "content": CODE_OF_CONDUCT,
         "metadata": {"type": "policy", "category": "conduct", "year": 2024},
+    },
+    {
+        "id": "professional-dev",
+        "title": "Professional Development Policy",
+        "content": PROFESSIONAL_DEVELOPMENT_POLICY,
+        "metadata": {"type": "policy", "category": "benefits", "year": 2024},
     },
 ]

@@ -20,11 +20,11 @@ export const useEmployeesStore = defineStore('employees', () => {
   }) {
     loading.value = true
     try {
-      const response: PaginatedResponse<Employee> = await employeesApi.getEmployees(params)
-      employees.value = response.items
-      totalCount.value = response.total
-      currentPage.value = response.page
-      totalPages.value = response.total_pages
+      const response: any = await employeesApi.getEmployees(params)
+      employees.value = response.items || response.data || (Array.isArray(response) ? response : [])
+      totalCount.value = response.total ?? employees.value.length
+      currentPage.value = response.page ?? response.current_page ?? 1
+      totalPages.value = response.total_pages ?? response.last_page ?? 1
     } finally {
       loading.value = false
     }

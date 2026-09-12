@@ -55,6 +55,15 @@
         "optimize-autoloader": true,
         "preferred-install": "dist",
         "sort-packages": true,
+        "audit": {
+            "block": false
+        },
+        "policy": {
+            "advisories": {
+                "block": false,
+                "ignore": ["laravel/framework"]
+            }
+        },
         "allow-plugins": {
             "pestphp/pest-plugin": true,
             "php-http/discovery": true

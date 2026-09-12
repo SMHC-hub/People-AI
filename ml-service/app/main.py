@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.routers import analyze, chat, predict
+from app.routers import analyze, chat, payroll, predict
 from app.schemas import HealthResponse
 
 # Configure logging
@@ -75,10 +75,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers
+# Include routers (both root and /api/v1 prefix to match Laravel config/ml.php)
 app.include_router(predict.router)
 app.include_router(analyze.router)
 app.include_router(chat.router)
+app.include_router(payroll.router)
+
+app.include_router(predict.router, prefix="/api/v1")
+app.include_router(analyze.router, prefix="/api/v1")
+app.include_router(chat.router, prefix="/api/v1")
+app.include_router(payroll.router, prefix="/api/v1")
 
 
 @app.get("/health", response_model=HealthResponse, tags=["health"])

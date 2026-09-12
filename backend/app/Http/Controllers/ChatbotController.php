@@ -57,7 +57,28 @@ class ChatbotController extends Controller
                 'tenant_id' => $request->user()->tenant_id,
             ]);
 
-            return $this->success($response);
+            $content = $response['answer'] ?? $response['content'] ?? '';
+            $citations = [];
+            foreach (($response['sources'] ?? []) as $src) {
+                $citations[] = [
+                    'document_title' => $src['document'] ?? $src['title'] ?? 'Company Policy',
+                    'source_type' => 'hr_policy',
+                    'relevance_score' => (float) ($src['similarity'] ?? 0.88),
+                    'content_snippet' => $src['text'] ?? $src['snippet'] ?? '',
+                ];
+            }
+
+            $normalized = [
+                'id' => 'msg-'.uniqid(),
+                'answer' => $content,
+                'content' => $content,
+                'role' => 'assistant',
+                'timestamp' => now()->toIso8601String(),
+                'citations' => $citations,
+                'sources' => $response['sources'] ?? [],
+            ];
+
+            return $this->success($normalized);
         } catch (\Exception $e) {
             return $this->error('Policy chatbot service unavailable: '.$e->getMessage(), 503);
         }

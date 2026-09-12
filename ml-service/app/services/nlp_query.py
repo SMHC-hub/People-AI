@@ -1,8 +1,9 @@
-"""NLP query service for interpreting natural language HR queries."""
-
+import logging
 from typing import Any, Dict, Optional
 
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class NLPQueryService:
@@ -14,15 +15,27 @@ class NLPQueryService:
 
     def __init__(self) -> None:
         self._client: Optional[Any] = None
+        self._model: str = "openai/gpt-oss-120b"
         self._initialize_client()
 
     def _initialize_client(self) -> None:
-        """Initialize the OpenAI client if API key is available."""
-        if settings.OPENAI_API_KEY:
+        """Initialize the LLM client (Groq or OpenAI) if API key is available."""
+        api_key = settings.GROQ_API_KEY or settings.OPENAI_API_KEY
+        if api_key:
             try:
                 from openai import OpenAI
-                self._client = OpenAI(api_key=settings.OPENAI_API_KEY)
-            except Exception:
+                if api_key.startswith("gsk_") or bool(settings.GROQ_API_KEY):
+                    self._client = OpenAI(
+                        api_key=api_key,
+                        base_url="https://api.groq.com/openai/v1",
+                    )
+                    self._model = settings.LLM_MODEL or "openai/gpt-oss-120b"
+                else:
+                    self._client = OpenAI(api_key=api_key)
+                    self._model = "gpt-4o"
+                logger.info("LLM client initialized with model: %s", self._model)
+            except Exception as e:
+                logger.warning("Failed to initialize LLM client: %s", e)
                 self._client = None
 
     async def interpret_query(
@@ -45,12 +58,12 @@ class NLPQueryService:
     async def _llm_response(
         self, question: str, context_type: str
     ) -> Dict[str, Any]:
-        """Generate response using OpenAI GPT-4o."""
+        """Generate response using LLM (Groq / OpenAI)."""
         system_prompt = self._build_system_prompt(context_type)
 
         try:
             response = self._client.chat.completions.create(
-                model="gpt-4o",
+                model=self._model,
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": question},
@@ -70,11 +83,8 @@ class NLPQueryService:
                 "sources": ["OpenAI GPT-4o", f"Context: {context_type}"],
             }
         except Exception as e:
-            return {
-                "answer": f"Error processing query: {str(e)}",
-                "suggested_sql": None,
-                "sources": [],
-            }
+            logger.warning(f"OpenAI query failed: {e}. Falling back to mock response.")
+            return self._mock_response(question, context_type)
 
     def _mock_response(
         self, question: str, context_type: str

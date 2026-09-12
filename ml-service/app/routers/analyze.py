@@ -32,10 +32,12 @@ async def detect_anomalies(
     try:
         results = anomaly_service.detect_anomalies(request.records)
         total_anomalies = sum(1 for r in results if r.is_anomaly)
+        anomaly_ids = [r.employee_id for r in results if r.is_anomaly]
 
         return AnomalyDetectionResponse(
             results=results,
             total_anomalies=total_anomalies,
+            anomaly_ids=anomaly_ids,
         )
     except Exception as e:
         logger.error(f"Anomaly detection failed: {e}")

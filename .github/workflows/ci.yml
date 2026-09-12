@@ -104,5 +104,6 @@ jobs:
         working-directory: ml-service
         env:
           OPENAI_API_KEY: test-key
+          GROQ_API_KEY: test-key
           CHROMA_PERSIST_DIR: /tmp/chroma
         run: pytest

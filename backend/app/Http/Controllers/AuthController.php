@@ -50,11 +50,12 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        if (! Auth::attempt($validated)) {
-            return $this->error('Invalid credentials', 401);
-        }
+        $email = strtolower(trim($validated['email']));
+        $user = User::whereRaw('LOWER(email) = ?', [$email])->first();
 
-        $user = User::where('email', $validated['email'])->firstOrFail();
+        if (! $user || ! Hash::check($validated['password'], $user->password)) {
+            return $this->error('Invalid email or password', 401);
+        }
         $token = $user->createToken('auth-token')->plainTextToken;
 
         return $this->success([

@@ -21,11 +21,11 @@ export const useLeavesStore = defineStore('leaves', () => {
   }) {
     loading.value = true
     try {
-      const response = await leavesApi.getLeaves(params)
-      leaves.value = response.items
-      totalCount.value = response.total
-      currentPage.value = response.page
-      totalPages.value = response.total_pages
+      const response: any = await leavesApi.getLeaves(params)
+      leaves.value = response.items || response.data || (Array.isArray(response) ? response : [])
+      totalCount.value = response.total ?? leaves.value.length
+      currentPage.value = response.page ?? response.current_page ?? 1
+      totalPages.value = response.total_pages ?? response.last_page ?? 1
     } finally {
       loading.value = false
     }

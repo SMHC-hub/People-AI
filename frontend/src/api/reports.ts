@@ -16,7 +16,16 @@ export async function generateReport(payload: {
   date_range_end: string
   title?: string
 }): Promise<Report> {
-  const { data } = await client.post<Report>('/reports/generate', payload)
+  const title = payload.title?.trim() || `${payload.type.charAt(0).toUpperCase() + payload.type.slice(1)} Report - ${new Date().toLocaleDateString()}`
+  const body = {
+    type: payload.type,
+    title,
+    parameters: {
+      date_from: payload.date_range_start || undefined,
+      date_to: payload.date_range_end || undefined,
+    },
+  }
+  const { data } = await client.post<Report>('/reports/generate', body)
   return data
 }
 

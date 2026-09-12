@@ -1,9 +1,124 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --bg-primary: #E8ECF1;
+  --bg-secondary: #EAEEF2;
+  --surface: #F5F7FA;
+  --surface-alt: #FAFBFC;
+  --primary-blue: #2D6CDF;
+  --primary-dark: #1E3FA3;
+  --secondary: #C4C9D0;
+  --text-primary: #2E3440;
+  --text-secondary: #8A94A6;
+  --icon-default: #9AA3B0;
+}
+
 body {
   margin: 0;
-  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
-    Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: #E8ECF1;
+  color: #2E3440;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom Soft Neumorphic Utilities */
+@layer components {
+  .neu-card {
+    background-color: #F5F7FA;
+    border-radius: 24px;
+    box-shadow: 6px 6px 14px rgba(163, 177, 198, 0.35), -6px -6px 14px rgba(255, 255, 255, 0.85);
+  }
+
+  .neu-card-sm {
+    background-color: #F5F7FA;
+    border-radius: 18px;
+    box-shadow: 4px 4px 10px rgba(163, 177, 198, 0.3), -4px -4px 10px rgba(255, 255, 255, 0.85);
+  }
+
+  .neu-card-elevated {
+    background-color: #FAFBFC;
+    border-radius: 28px;
+    box-shadow: 10px 10px 24px rgba(163, 177, 198, 0.35), -10px -10px 24px rgba(255, 255, 255, 0.9);
+  }
+
+  .neu-input {
+    background-color: #E8ECF1;
+    border-radius: 14px;
+    box-shadow: inset 3px 3px 6px rgba(163, 177, 198, 0.35), inset -3px -3px 6px rgba(255, 255, 255, 0.85);
+    border: none;
+    outline: none;
+    color: #2E3440;
+    transition: all 0.2s ease;
+  }
+
+  .neu-input:focus {
+    box-shadow: inset 4px 4px 8px rgba(45, 108, 223, 0.25), inset -3px -3px 6px rgba(255, 255, 255, 0.9);
+  }
+
+  .neu-btn {
+    background-color: #F5F7FA;
+    border-radius: 16px;
+    box-shadow: 4px 4px 10px rgba(163, 177, 198, 0.35), -4px -4px 10px rgba(255, 255, 255, 0.85);
+    color: #2E3440;
+    font-weight: 500;
+    transition: all 0.15s ease;
+  }
+
+  .neu-btn:hover {
+    box-shadow: 5px 5px 12px rgba(163, 177, 198, 0.4), -5px -5px 12px rgba(255, 255, 255, 0.95);
+  }
+
+  .neu-btn:active, .neu-btn-active {
+    box-shadow: inset 2px 2px 5px rgba(163, 177, 198, 0.5), inset -2px -2px 5px rgba(255, 255, 255, 0.9);
+  }
+
+  .neu-btn-primary {
+    background: linear-gradient(135deg, #3B82F6 0%, #2D6CDF 100%);
+    border-radius: 16px;
+    box-shadow: 4px 4px 12px rgba(45, 108, 223, 0.35), -3px -3px 10px rgba(255, 255, 255, 0.8);
+    color: #ffffff;
+    font-weight: 600;
+    transition: all 0.15s ease;
+  }
+
+  .neu-btn-primary:hover {
+    background: linear-gradient(135deg, #2D6CDF 0%, #1E3FA3 100%);
+    box-shadow: 5px 5px 14px rgba(45, 108, 223, 0.45), -3px -3px 10px rgba(255, 255, 255, 0.9);
+  }
+
+  .neu-btn-primary:active {
+    box-shadow: inset 2px 2px 6px rgba(0, 0, 0, 0.3);
+  }
+
+  .neu-badge {
+    border-radius: 10px;
+    box-shadow: 2px 2px 5px rgba(163, 177, 198, 0.25), -2px -2px 5px rgba(255, 255, 255, 0.7);
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.2rem 0.6rem;
+  }
+}
+
+/* Subtle scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #E8ECF1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #C4C9D0;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9AA3B0;
 }

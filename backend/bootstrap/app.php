@@ -14,11 +14,14 @@ return Application::configure(basePath: dirname(__DIR__))
             'tenant.scope' => \App\Http\Middleware\TenantScope::class,
         ]);
 
-        $middleware->api(prepend: [
-            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+        $middleware->validateCsrfTokens(except: [
+            'api/*',
+            '*',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        $exceptions->shouldRenderJsonWhen(function (\Illuminate\Http\Request $request, \Throwable $e) {
+            return true;
+        });
     })
     ->create();

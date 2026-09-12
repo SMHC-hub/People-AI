@@ -12,6 +12,7 @@
 backend/vendor/
 backend/.env
 backend/storage/*.key
+backend/storage/app/reports/*
 backend/storage/framework/cache/data/*
 backend/storage/framework/sessions/*
 backend/storage/framework/views/*

@@ -20,6 +20,7 @@ class Employee extends Model
         'user_id',
         'department_id',
         'position_id',
+        'location_id',
         'employee_code',
         'first_name',
         'last_name',
@@ -28,6 +29,12 @@ class Employee extends Model
         'hire_date',
         'resign_date',
         'salary',
+        'risk_score',
+        'risk_level',
+        'years_since_promotion',
+        'job_satisfaction',
+        'performance_rating',
+        'risk_factors',
         'status',
         'tenant_id',
     ];
@@ -43,6 +50,11 @@ class Employee extends Model
             'hire_date' => 'date',
             'resign_date' => 'date',
             'salary' => 'decimal:2',
+            'risk_score' => 'decimal:2',
+            'years_since_promotion' => 'decimal:1',
+            'performance_rating' => 'decimal:2',
+            'job_satisfaction' => 'integer',
+            'risk_factors' => 'array',
         ];
     }
 
@@ -68,6 +80,30 @@ class Employee extends Model
     public function position(): BelongsTo
     {
         return $this->belongsTo(Position::class);
+    }
+
+    /**
+     * Get the location of the employee.
+     */
+    public function location(): BelongsTo
+    {
+        return $this->belongsTo(Location::class);
+    }
+
+    /**
+     * Get the payroll records for the employee.
+     */
+    public function payrolls(): HasMany
+    {
+        return $this->hasMany(Payroll::class);
+    }
+
+    /**
+     * Get the performance reviews for the employee.
+     */
+    public function performances(): HasMany
+    {
+        return $this->hasMany(Performance::class);
     }
 
     /**

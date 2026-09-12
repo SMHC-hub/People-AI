@@ -1,149 +1,141 @@
-# AI-HR Analytics Platform - API Documentation
+# PeopleAI REST API Specification
 
-## Base URL
-
-```
-http://localhost:8000/api
-```
-
-## Authentication
-
-All API endpoints (except login and register) require a Bearer token in the `Authorization` header. Tokens are issued via Laravel Sanctum.
-
-```
-Authorization: Bearer <token>
-```
+All backend endpoints are prefixed with `/api` and served via Laravel 11. Authentication uses bearer tokens issued by Laravel Sanctum.
 
 ---
 
-## Endpoints
+## 1. Authentication & Tenant Identity
 
-### Authentication
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/auth/register` | Register a new user |
-| POST | `/api/auth/login` | Login and receive an API token |
-| POST | `/api/auth/logout` | Revoke the current token |
-| GET | `/api/auth/me` | Get the authenticated user profile |
-
-### Employees
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/employees` | List all employees (paginated) |
-| POST | `/api/employees` | Create a new employee record |
-| GET | `/api/employees/{id}` | Get a single employee by ID |
-| PUT | `/api/employees/{id}` | Update an employee record |
-| DELETE | `/api/employees/{id}` | Soft-delete an employee record |
-| GET | `/api/employees/{id}/history` | Get employment history for an employee |
-
-### Departments
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/departments` | List all departments |
-| POST | `/api/departments` | Create a new department |
-| GET | `/api/departments/{id}` | Get department details |
-| PUT | `/api/departments/{id}` | Update a department |
-| GET | `/api/departments/{id}/stats` | Get department-level analytics |
-
-### Analytics & Dashboards
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/analytics/dashboard` | Get dashboard summary metrics |
-| GET | `/api/analytics/turnover` | Get turnover analytics and trends |
-| GET | `/api/analytics/satisfaction` | Get employee satisfaction metrics |
-| GET | `/api/analytics/headcount` | Get headcount trends over time |
-| GET | `/api/analytics/department-comparison` | Compare metrics across departments |
-
-### ML Predictions
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/predictions/turnover` | Predict turnover risk for an employee |
-| GET | `/api/predictions/turnover/batch` | Get batch turnover predictions |
-| GET | `/api/predictions/anomalies` | Detect anomalies in HR metrics |
-| GET | `/api/predictions/risk-factors` | Get top risk factors from the model |
-
-### RAG Chatbot
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/chat` | Send a message to the HR AI chatbot |
-| GET | `/api/chat/history` | Retrieve chat history for the user |
-| DELETE | `/api/chat/history` | Clear chat history |
-
-### Reports
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/reports` | List available reports |
-| POST | `/api/reports/generate` | Generate a new report (PDF/CSV) |
-| GET | `/api/reports/{id}/download` | Download a generated report |
-
-### Notifications
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/notifications` | List notifications for the user |
-| PUT | `/api/notifications/{id}/read` | Mark a notification as read |
-| POST | `/api/notifications/settings` | Update notification preferences |
-
----
-
-## Error Responses
-
-All errors follow a consistent format:
-
+### `POST /api/auth/login`
+Authenticates user and returns Bearer token.
+* **Request**:
 ```json
 {
-  "message": "Human-readable error description",
-  "errors": {
-    "field": ["Validation error detail"]
+  "email": "admin@hranalytics.com",
+  "password": "password"
+}
+```
+* **Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "user": {
+      "id": 1,
+      "email": "admin@hranalytics.com",
+      "full_name": "System Administrator",
+      "role": "admin",
+      "organization_id": 1
+    },
+    "token": "1|sanctum_token_string"
   }
 }
 ```
 
-| Status Code | Meaning |
-|-------------|---------|
-| 400 | Bad Request - invalid parameters |
-| 401 | Unauthorized - missing or invalid token |
-| 403 | Forbidden - insufficient permissions |
-| 404 | Not Found - resource does not exist |
-| 422 | Unprocessable Entity - validation failed |
-| 500 | Internal Server Error |
+---
+
+## 2. Workforce Intelligence & Heatmaps
+
+### `GET /api/workforce/stats`
+Returns aggregated workforce health metrics, active headcount, risk counts, and satisfaction.
+
+### `GET /api/workforce/heatmap`
+Returns department-level breakdown: headcount, high-risk employee count, risk percentage, average satisfaction, and average promotion latency.
+
+### `GET /api/workforce/insights`
+Returns live AI workforce insight cards synthesized from SHAP factor decomposition and department distributions.
 
 ---
 
-## Pagination
+## 3. Payroll Intelligence & Anomaly Audit
 
-List endpoints return paginated results:
+### `GET /api/payrolls`
+Paginated payroll records with filtering by `month`, `is_anomaly`, and `review_status`.
 
+### `GET /api/payrolls/stats`
+Returns total monthly payout, average net salary, total overtime disbursed, and anomaly count.
+
+### `GET /api/payrolls/anomalies`
+Returns all flagged payroll anomalies for a specified month.
+
+### `POST /api/payrolls/{id}/review`
+Updates human audit review status on a flagged payroll anomaly.
+* **Request**:
 ```json
 {
-  "data": [...],
-  "meta": {
-    "current_page": 1,
-    "last_page": 5,
-    "per_page": 15,
-    "total": 72
-  }
+  "review_status": "reviewed",
+  "notes": "Overtime justified due to Q1 production release."
 }
 ```
 
-Query parameters: `?page=1&per_page=15`
+---
+
+## 4. Performance & Appraisal Analytics
+
+### `GET /api/performances`
+Returns paginated quarterly performance reviews with filters for `review_period` and `promotion_recommended`.
+
+### `GET /api/performances/stats`
+Returns appraisal completion count, average rating (out of 5.0), promotion recommendation rate, and bell curve rating distribution.
 
 ---
 
-## ML Service (Internal)
+## 5. MLOps Lifecycle & Governance
 
-The ML service runs on `http://ml-service:8001` and is called internally by the Laravel backend. Direct access is not intended for end users.
+### `GET /api/mlops/models`
+Returns registered model versions, algorithms, accuracy, and deployment stages.
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/predict/turnover` | Turnover risk prediction |
-| POST | `/detect/anomalies` | Anomaly detection on HR data |
-| POST | `/chat/completions` | RAG-powered chatbot response |
-| GET | `/health` | Service health check |
+### `GET /api/mlops/metrics`
+Returns combined MLOps metrics: Population Stability Index (PSI) drift telemetry, benchmark comparisons, and active champion models.
+
+### `POST /api/mlops/retrain`
+Triggers asynchronous model retraining pipeline.
+
+### `POST /api/mlops/models/{id}/promote`
+Promotes a candidate model version to active production champion.
+
+---
+
+## 6. Audit Trail & Enterprise Settings
+
+### `GET /api/audit-logs`
+Returns tamper-evident audit logs of administrative actions, payroll approvals, and model executions.
+
+### `GET /api/settings`
+Returns enterprise tenant configuration, active user counts, and ML service health status.
+
+### `PUT /api/settings`
+Updates organization parameters (e.g. legal name, corporate domain).
+
+---
+
+## 7. AI HR Chatbot (RAG Assistant)
+
+### `POST /api/chatbot/query`
+General workforce inquiry.
+
+### `POST /api/chatbot/policy`
+Document-grounded RAG query evaluated against company handbooks with verifiable citations.
+* **Request**:
+```json
+{
+  "question": "What is the annual education budget per employee?"
+}
+```
+* **Response**:
+```json
+{
+  "id": "msg-12345",
+  "content": "According to the Professional Development Policy, each full-time employee is eligible for up to $2,500 annually for tuition reimbursement and approved professional certifications.",
+  "role": "assistant",
+  "timestamp": "2026-09-12T20:30:00Z",
+  "citations": [
+    {
+      "document_title": "Professional Development Policy",
+      "source_type": "hr_policy",
+      "relevance_score": 0.94,
+      "content_snippet": "Section 3.2: Full-time employees may request up to $2,500 per calendar year..."
+    }
+  ]
+}
+```

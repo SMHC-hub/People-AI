@@ -9,6 +9,11 @@ const router = createRouter({
       component: () => import('@/views/DashboardView.vue'),
     },
     {
+      path: '/workforce',
+      name: 'workforce',
+      component: () => import('@/views/WorkforceView.vue'),
+    },
+    {
       path: '/employees',
       name: 'employees',
       component: () => import('@/views/EmployeeListView.vue'),
@@ -29,6 +34,16 @@ const router = createRouter({
       component: () => import('@/views/LeaveManagementView.vue'),
     },
     {
+      path: '/payrolls',
+      name: 'payrolls',
+      component: () => import('@/views/PayrollView.vue'),
+    },
+    {
+      path: '/performances',
+      name: 'performances',
+      component: () => import('@/views/PerformanceView.vue'),
+    },
+    {
       path: '/reports',
       name: 'reports',
       component: () => import('@/views/ReportView.vue'),
@@ -37,6 +52,16 @@ const router = createRouter({
       path: '/chatbot',
       name: 'chatbot',
       component: () => import('@/views/ChatbotView.vue'),
+    },
+    {
+      path: '/mlops',
+      name: 'mlops',
+      component: () => import('@/views/MLOpsView.vue'),
+    },
+    {
+      path: '/settings',
+      name: 'settings',
+      component: () => import('@/views/SettingsView.vue'),
     },
     {
       path: '/login',
