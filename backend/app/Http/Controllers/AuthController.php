@@ -57,6 +57,7 @@ class AuthController extends Controller
             return $this->error('Invalid email or password', 401);
         }
         $token = $user->createToken('auth-token')->plainTextToken;
+        $user->load(['employee.department', 'employee.position']);
 
         return $this->success([
             'user' => $user,

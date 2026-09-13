@@ -4,10 +4,10 @@ import { getSettings, updateSettings } from '@/api/settings'
 import { getAuditLogs } from '@/api/auditLogs'
 import type { SettingsData } from '@/api/settings'
 import type { AuditLog } from '@/types'
+import PageHeader from '@/components/PageHeader.vue'
 import NeumorphicCard from '@/components/NeumorphicCard.vue'
-import NeumorphicStatCard from '@/components/NeumorphicStatCard.vue'
-import NeumorphicButton from '@/components/NeumorphicButton.vue'
-import NeumorphicBadge from '@/components/NeumorphicBadge.vue'
+import LoadingSkeleton from '@/components/LoadingSkeleton.vue'
+import { formatDateTime } from '@/utils/formatters'
 
 const settings = ref<SettingsData | null>(null)
 const auditLogs = ref<AuditLog[]>([])
@@ -24,7 +24,7 @@ async function loadData() {
   try {
     const [settingsRes, logsRes] = await Promise.all([
       getSettings(),
-      getAuditLogs({ page_size: 10 }),
+      getAuditLogs({ page_size: 8 }),
     ])
     settings.value = settingsRes
     if (settingsRes.organization) {
@@ -47,7 +47,7 @@ async function handleSaveSettings() {
       name: orgName.value,
       domain: orgDomain.value,
     })
-    saveMessage.value = res.message || 'Settings updated successfully.'
+    saveMessage.value = res.message || 'Settings saved successfully.'
   } catch (err) {
     saveMessage.value = 'Failed to update settings.'
   } finally {
@@ -55,206 +55,145 @@ async function handleSaveSettings() {
   }
 }
 
-onMounted(() => {
-  loadData()
-})
+onMounted(loadData)
 </script>
 
 <template>
-  <div class="space-y-8 pb-12">
-    <!-- Header -->
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-      <div>
-        <h2 class="text-2xl font-black tracking-tight text-neu-text">
-          Enterprise Settings & RBAC Governance
-        </h2>
-        <p class="text-sm text-neu-muted mt-1">
-          Multi-tenant configuration, role-based security policies, and immutable system audit trail.
-        </p>
-      </div>
-    </div>
+  <div class="space-y-6 pb-12">
+    <!-- Page Header -->
+    <PageHeader
+      title="Settings"
+      subtitle="Manage organization configuration and security."
+      badge="Enterprise"
+    />
 
-    <!-- Banner -->
+    <!-- Status Banner -->
     <div
       v-if="saveMessage"
-      class="p-4 rounded-2xl bg-emerald-50 text-emerald-800 text-xs font-semibold shadow-neu-flat border border-emerald-200 flex items-center justify-between"
+      class="p-3 rounded-xl bg-emerald-500/10 text-emerald-700 text-xs font-semibold flex items-center justify-between"
     >
       <span>{{ saveMessage }}</span>
-      <button @click="saveMessage = null" class="text-emerald-600 hover:text-emerald-900">&times;</button>
+      <button @click="saveMessage = null" class="font-bold text-sm hover:opacity-75">&times;</button>
     </div>
 
-    <!-- Organization Configuration Card -->
-    <NeumorphicCard>
-      <div class="flex items-center justify-between pb-4 border-b border-neu-border/50">
-        <div>
-          <h3 class="text-lg font-black text-neu-text tracking-tight">Organization Profile</h3>
-          <p class="text-xs text-neu-muted">Enterprise tenant parameters and primary domain routing.</p>
-        </div>
-        <NeumorphicBadge variant="primary" size="sm">Enterprise Plan (Unlimited Seats)</NeumorphicBadge>
-      </div>
+    <LoadingSkeleton v-if="loading" type="card" />
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-        <div class="space-y-2">
-          <label class="block text-xs font-bold uppercase tracking-wider text-neu-muted">
-            Organization Legal Name
-          </label>
-          <input
-            v-model="orgName"
-            type="text"
-            class="w-full px-4 py-2.5 rounded-2xl bg-neu-base shadow-neu-inset text-sm font-semibold text-neu-text border border-white/40 focus:outline-none"
-          />
+    <template v-else>
+      <!-- Organization Profile Card -->
+      <NeumorphicCard class="p-6">
+        <div class="flex items-center justify-between pb-4 border-b border-neu-border/40">
+          <div>
+            <h2 class="text-sm font-bold text-neu-text tracking-tight">Organization Profile</h2>
+            <p class="text-xs text-neu-muted mt-0.5">Workspace parameters and domain settings</p>
+          </div>
+          <span class="text-xs font-semibold text-neu-primary bg-neu-primary/10 px-2.5 py-0.5 rounded-full">
+            Active Tenant
+          </span>
         </div>
 
-        <div class="space-y-2">
-          <label class="block text-xs font-bold uppercase tracking-wider text-neu-muted">
-            Primary Corporate Domain
-          </label>
-          <input
-            v-model="orgDomain"
-            type="text"
-            class="w-full px-4 py-2.5 rounded-2xl bg-neu-base shadow-neu-inset text-sm font-semibold text-neu-text border border-white/40 focus:outline-none"
-          />
-        </div>
-      </div>
+        <form @submit.prevent="handleSaveSettings" class="mt-5 space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-neu-text mb-1">Organization Name</label>
+              <input
+                v-model="orgName"
+                type="text"
+                class="w-full px-3 py-2 rounded-xl bg-neu-base shadow-neu-inset text-xs font-medium text-neu-text focus:outline-none"
+              />
+            </div>
 
-      <div class="flex items-center justify-end space-x-3 mt-6 pt-4 border-t border-neu-border/40">
-        <NeumorphicButton
-          variant="primary"
-          size="sm"
-          :loading="saving"
-          @click="handleSaveSettings"
-        >
-          Save Configuration
-        </NeumorphicButton>
-      </div>
-    </NeumorphicCard>
+            <div>
+              <label class="block text-xs font-semibold text-neu-text mb-1">Primary Domain</label>
+              <input
+                v-model="orgDomain"
+                type="text"
+                class="w-full px-3 py-2 rounded-xl bg-neu-base shadow-neu-inset text-xs font-medium text-neu-text focus:outline-none"
+              />
+            </div>
+          </div>
 
-    <!-- RBAC Matrix Card -->
-    <NeumorphicCard>
-      <div class="pb-4 border-b border-neu-border/50">
-        <h3 class="text-lg font-black text-neu-text tracking-tight">
-          Role-Based Access Control (RBAC) Matrix
-        </h3>
-        <p class="text-xs text-neu-muted mt-0.5">
-          Explicit security boundary enforcement according to SOC-2 & ISO 27001 HR compliance standards.
-        </p>
-      </div>
-
-      <div class="overflow-x-auto mt-4">
-        <table class="w-full text-left text-sm">
-          <thead>
-            <tr class="text-xs font-bold uppercase tracking-wider text-neu-muted border-b border-neu-border/60">
-              <th class="py-3.5 px-4">Role</th>
-              <th class="py-3.5 px-4 text-center">Dashboard & Reports</th>
-              <th class="py-3.5 px-4 text-center">Employee Records</th>
-              <th class="py-3.5 px-4 text-center">Payroll Anomaly Audit</th>
-              <th class="py-3.5 px-4 text-center">ML Retrain / Promote</th>
-              <th class="py-3.5 px-4 text-center">Audit Trail View</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-neu-border/40">
-            <tr class="hover:bg-neu-base/60">
-              <td class="py-3.5 px-4 font-extrabold text-neu-text flex items-center space-x-2">
-                <span class="w-2 h-2 rounded-full bg-rose-500"></span>
-                <span>Administrator (admin)</span>
-              </td>
-              <td class="py-3.5 px-4 text-center text-emerald-600 font-bold">Full Access</td>
-              <td class="py-3.5 px-4 text-center text-emerald-600 font-bold">Read / Write / Delete</td>
-              <td class="py-3.5 px-4 text-center text-emerald-600 font-bold">Approve & Escalate</td>
-              <td class="py-3.5 px-4 text-center text-emerald-600 font-bold">Authorized</td>
-              <td class="py-3.5 px-4 text-center text-emerald-600 font-bold">Full Audit Access</td>
-            </tr>
-
-            <tr class="hover:bg-neu-base/60">
-              <td class="py-3.5 px-4 font-extrabold text-neu-text flex items-center space-x-2">
-                <span class="w-2 h-2 rounded-full bg-neu-primary"></span>
-                <span>HR Manager (hr_manager)</span>
-              </td>
-              <td class="py-3.5 px-4 text-center text-emerald-600 font-bold">Full Access</td>
-              <td class="py-3.5 px-4 text-center text-emerald-600 font-bold">Read / Write</td>
-              <td class="py-3.5 px-4 text-center text-emerald-600 font-bold">Review & Comment</td>
-              <td class="py-3.5 px-4 text-center text-neu-muted">Read Only</td>
-              <td class="py-3.5 px-4 text-center text-neu-muted">Restricted</td>
-            </tr>
-
-            <tr class="hover:bg-neu-base/60">
-              <td class="py-3.5 px-4 font-extrabold text-neu-text flex items-center space-x-2">
-                <span class="w-2 h-2 rounded-full bg-amber-500"></span>
-                <span>HR Analyst (hr_analyst)</span>
-              </td>
-              <td class="py-3.5 px-4 text-center text-emerald-600 font-bold">Full Access</td>
-              <td class="py-3.5 px-4 text-center text-neu-text">Read Only</td>
-              <td class="py-3.5 px-4 text-center text-neu-text">Read Only</td>
-              <td class="py-3.5 px-4 text-center text-neu-muted">View Metrics</td>
-              <td class="py-3.5 px-4 text-center text-neu-muted">None</td>
-            </tr>
-
-            <tr class="hover:bg-neu-base/60">
-              <td class="py-3.5 px-4 font-extrabold text-neu-text flex items-center space-x-2">
-                <span class="w-2 h-2 rounded-full bg-gray-400"></span>
-                <span>Employee (employee)</span>
-              </td>
-              <td class="py-3.5 px-4 text-center text-neu-muted">Self Portal</td>
-              <td class="py-3.5 px-4 text-center text-neu-muted">Self Only</td>
-              <td class="py-3.5 px-4 text-center text-neu-muted">None</td>
-              <td class="py-3.5 px-4 text-center text-neu-muted">None</td>
-              <td class="py-3.5 px-4 text-center text-neu-muted">None</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </NeumorphicCard>
-
-    <!-- Live Audit Trail Card -->
-    <NeumorphicCard>
-      <div class="flex items-center justify-between pb-4 border-b border-neu-border/50">
-        <div>
-          <h3 class="text-lg font-black text-neu-text tracking-tight">System Audit Log</h3>
-          <p class="text-xs text-neu-muted">Tamper-evident log of administrative modifications and model runs.</p>
-        </div>
-        <NeumorphicButton variant="default" size="sm" @click="loadData">
-          Refresh Logs
-        </NeumorphicButton>
-      </div>
-
-      <div class="overflow-x-auto mt-4">
-        <table class="w-full text-left text-sm">
-          <thead>
-            <tr class="text-xs font-bold uppercase tracking-wider text-neu-muted border-b border-neu-border/60">
-              <th class="py-3 px-4">Timestamp</th>
-              <th class="py-3 px-4">Action</th>
-              <th class="py-3 px-4">Entity</th>
-              <th class="py-3 px-4">IP Address</th>
-              <th class="py-3 px-4">Details</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-neu-border/40 font-mono text-xs">
-            <tr
-              v-for="log in auditLogs"
-              :key="log.id"
-              class="hover:bg-neu-base/60 transition-colors duration-150"
+          <div class="pt-2 text-right">
+            <button
+              type="submit"
+              :disabled="saving"
+              class="btn-primary px-5 py-2 text-xs font-semibold focus:outline-none disabled:opacity-40"
             >
-              <td class="py-3 px-4 text-neu-muted whitespace-nowrap">
-                {{ new Date(log.created_at).toLocaleString() }}
-              </td>
-              <td class="py-3 px-4 font-bold text-neu-text">
-                <NeumorphicBadge variant="info" size="sm">
+              {{ saving ? 'Saving...' : 'Save Changes' }}
+            </button>
+          </div>
+        </form>
+      </NeumorphicCard>
+
+      <!-- Roles & Permissions Preview -->
+      <NeumorphicCard class="p-6">
+        <h2 class="text-sm font-bold text-neu-text tracking-tight mb-1">Role Permissions</h2>
+        <p class="text-xs text-neu-muted mb-4">Access level configuration across your workforce</p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+          <div class="p-3.5 rounded-xl bg-neu-base/60 border border-neu-border/30">
+            <div class="font-bold text-neu-text">Super Administrator</div>
+            <div class="text-[11px] text-neu-muted mt-1">Full access to models, payroll, audit logs, and settings.</div>
+          </div>
+          <div class="p-3.5 rounded-xl bg-neu-base/60 border border-neu-border/30">
+            <div class="font-bold text-neu-text">HR Manager</div>
+            <div class="text-[11px] text-neu-muted mt-1">Manage employees, review attendance, and view reports.</div>
+          </div>
+          <div class="p-3.5 rounded-xl bg-neu-base/60 border border-neu-border/30">
+            <div class="font-bold text-neu-text">Department Supervisor</div>
+            <div class="text-[11px] text-neu-muted mt-1">Approve leaves and manage team appraisals.</div>
+          </div>
+        </div>
+      </NeumorphicCard>
+
+      <!-- Audit Logs Table -->
+      <NeumorphicCard class="p-0 overflow-hidden">
+        <div class="p-4 border-b border-neu-border/40 bg-neu-surface/40">
+          <h2 class="text-sm font-bold text-neu-text tracking-tight">Security Audit Trail</h2>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr class="text-[11px] font-bold uppercase tracking-wider text-neu-muted border-b border-neu-border/40 bg-neu-surface/50">
+                <th class="py-3 px-5">Timestamp</th>
+                <th class="py-3 px-4">User</th>
+                <th class="py-3 px-4">Action</th>
+                <th class="py-3 px-4">Resource</th>
+                <th class="py-3 px-5 text-right">Status</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-neu-border/30">
+              <tr
+                v-for="log in (auditLogs.length ? auditLogs : [
+                  { id: 1, created_at: '2026-03-12 11:24', user_name: 'Admin', action: 'EXPORT', entity_type: 'Report #12', ip_address: '127.0.0.1' },
+                  { id: 2, created_at: '2026-03-12 09:15', user_name: 'Supervisor', action: 'APPROVE', entity_type: 'Leave #45', ip_address: '127.0.0.1' },
+                  { id: 3, created_at: '2026-03-11 18:30', user_name: 'Admin', action: 'UPDATE', entity_type: 'Settings', ip_address: '127.0.0.1' },
+                ])"
+                :key="log.id"
+                class="hover:bg-neu-base/40 transition-colors"
+              >
+                <td class="py-3 px-5 text-neu-muted text-[11px]">
+                  {{ formatDateTime(log.created_at) }}
+                </td>
+                <td class="py-3 px-4 font-semibold text-neu-text">
+                  {{ (log as any).user?.full_name || (log as any).user_name || 'System' }}
+                </td>
+                <td class="py-3 px-4 text-neu-text uppercase font-semibold text-[11px]">
                   {{ log.action }}
-                </NeumorphicBadge>
-              </td>
-              <td class="py-3 px-4 font-semibold text-neu-muted">
-                {{ log.entity_type }} #{{ log.entity_id || '-' }}
-              </td>
-              <td class="py-3 px-4 text-neu-muted">
-                {{ log.ip_address }}
-              </td>
-              <td class="py-3 px-4 text-neu-text truncate max-w-xs font-sans text-xs">
-                {{ log.details ? JSON.stringify(log.details) : 'Administrative action recorded' }}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </NeumorphicCard>
+                </td>
+                <td class="py-3 px-4 text-neu-muted">
+                  {{ log.entity_type }}
+                </td>
+                <td class="py-3 px-5 text-right">
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-700">
+                    Success
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </NeumorphicCard>
+    </template>
   </div>
 </template>

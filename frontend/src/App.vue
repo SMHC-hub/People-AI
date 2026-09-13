@@ -32,7 +32,11 @@ onUnmounted(() => {
     <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
       <TopHeader v-if="showLayout" @open-command-palette="showPalette = true" />
       <main class="flex-1 overflow-y-auto p-6 lg:p-8">
-        <router-view />
+        <router-view :key="$route.fullPath" v-slot="{ Component }">
+          <transition name="fade" mode="out-in">
+            <component :is="Component" />
+          </transition>
+        </router-view>
       </main>
     </div>
 

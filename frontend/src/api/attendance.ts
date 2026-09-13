@@ -8,6 +8,8 @@ export async function getAttendance(params?: {
   date_from?: string
   date_to?: string
   status?: string
+  is_anomaly?: boolean
+  anomalies_only?: boolean
 }): Promise<PaginatedResponse<Attendance>> {
   const { data } = await client.get<PaginatedResponse<Attendance>>('/attendance', { params })
   return data

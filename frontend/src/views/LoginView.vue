@@ -18,7 +18,11 @@ async function handleLogin() {
   loading.value = true
   try {
     await authStore.login(email.value.trim(), password.value)
-    await router.push('/')
+    if (authStore.user?.role === 'employee') {
+      await router.push('/portal')
+    } else {
+      await router.push('/')
+    }
   } catch (err: any) {
     error.value =
       err.response?.data?.message ||
@@ -113,38 +117,26 @@ function fillCredentials(e: string, p: string) {
         </form>
 
         <!-- Quick Demo Switcher -->
-        <div class="pt-4 border-t border-neu-border/50 space-y-2">
+        <div class="pt-4 border-t border-neu-border/50 space-y-2.5">
           <div class="text-[11px] font-bold uppercase tracking-wider text-neu-muted text-center">
             Quick Persona Switcher (Demo)
           </div>
-          <div class="grid grid-cols-2 gap-2 text-xs">
+          <div class="grid grid-cols-2 gap-3 text-xs">
             <button
               type="button"
               @click="fillCredentials('admin@hranalytics.com', 'password')"
-              class="p-2 rounded-xl bg-neu-base shadow-neu-flat hover:shadow-neu-pressed text-[11px] font-bold text-neu-text border border-white/40 transition-all text-left truncate"
+              class="p-2.5 rounded-xl bg-neu-base shadow-neu-flat hover:shadow-neu-pressed text-[11px] font-bold text-neu-text border border-white/40 transition-all text-center flex items-center justify-center space-x-1.5 cursor-pointer"
             >
-              👑 Admin (Full Access)
-            </button>
-            <button
-              type="button"
-              @click="fillCredentials('hrmanager@hranalytics.com', 'password')"
-              class="p-2 rounded-xl bg-neu-base shadow-neu-flat hover:shadow-neu-pressed text-[11px] font-bold text-neu-text border border-white/40 transition-all text-left truncate"
-            >
-              💼 HR Manager
-            </button>
-            <button
-              type="button"
-              @click="fillCredentials('hranalyst@hranalytics.com', 'password')"
-              class="p-2 rounded-xl bg-neu-base shadow-neu-flat hover:shadow-neu-pressed text-[11px] font-bold text-neu-text border border-white/40 transition-all text-left truncate"
-            >
-              📊 HR Analyst
+              <span>👑</span>
+              <span>Admin (Full Access)</span>
             </button>
             <button
               type="button"
               @click="fillCredentials('employee@hranalytics.com', 'password')"
-              class="p-2 rounded-xl bg-neu-base shadow-neu-flat hover:shadow-neu-pressed text-[11px] font-bold text-neu-text border border-white/40 transition-all text-left truncate"
+              class="p-2.5 rounded-xl bg-neu-base shadow-neu-flat hover:shadow-neu-pressed text-[11px] font-bold text-neu-text border border-white/40 transition-all text-center flex items-center justify-center space-x-1.5 cursor-pointer"
             >
-              👤 Employee
+              <span>👤</span>
+              <span>Employee Portal</span>
             </button>
           </div>
         </div>

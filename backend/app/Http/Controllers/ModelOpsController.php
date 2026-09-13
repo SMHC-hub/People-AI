@@ -16,7 +16,7 @@ class ModelOpsController extends Controller
     {
         $tenantId = $request->user()->tenant_id;
         $models = ModelVersion::where('tenant_id', $tenantId)
-            ->orderByRaw("FIELD(stage, 'production', 'staging', 'development', 'archived')")
+            ->orderByRaw("CASE stage WHEN 'production' THEN 1 WHEN 'staging' THEN 2 WHEN 'development' THEN 3 WHEN 'archived' THEN 4 ELSE 5 END")
             ->orderBy('id', 'desc')
             ->get();
 

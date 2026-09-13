@@ -12,6 +12,13 @@ class Employee extends Model
     use HasFactory;
 
     /**
+     * The accessors to append to the model's array form.
+     *
+     * @var list<string>
+     */
+    protected $appends = ['full_name'];
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var list<string>

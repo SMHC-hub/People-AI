@@ -14,6 +14,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 
 class DatabaseSeeder extends Seeder
 {
@@ -26,7 +27,7 @@ class DatabaseSeeder extends Seeder
         $tenantId = 1;
 
         // Truncate tables for clean seed
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        Schema::disableForeignKeyConstraints();
         DB::table('users')->truncate();
         DB::table('organizations')->truncate();
         DB::table('locations')->truncate();
@@ -40,7 +41,7 @@ class DatabaseSeeder extends Seeder
         DB::table('audit_logs')->truncate();
         DB::table('model_versions')->truncate();
         DB::table('rag_documents')->truncate();
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        Schema::enableForeignKeyConstraints();
 
         // 1. Organization
         Organization::create([
@@ -53,7 +54,7 @@ class DatabaseSeeder extends Seeder
                 'retention_threshold' => 70,
                 'anomaly_sensitivity' => 'high',
                 'auto_report_schedule' => 'weekly',
-                'llm_provider' => 'Groq (openai/gpt-oss-120b)',
+                'llm_provider' => 'Groq (llama-3.3-70b-versatile)',
             ],
         ]);
 
@@ -157,10 +158,18 @@ class DatabaseSeeder extends Seeder
                 'tenant_id' => $tenantId,
                 'email_verified_at' => now(),
             ],
+            [
+                'name' => 'Emily Watson',
+                'email' => 'employee@hranalytics.com',
+                'password' => Hash::make('password'),
+                'role' => 'employee',
+                'tenant_id' => $tenantId,
+                'email_verified_at' => now(),
+            ],
         ];
 
         foreach ($users as $u) {
-            User::create($u);
+            User::firstOrCreate(['email' => $u['email']], $u);
         }
 
         // 6. Name pools for 1,000+ realistic synthetic enterprise employees
@@ -679,5 +688,8 @@ class DatabaseSeeder extends Seeder
             $al['tenant_id'] = $tenantId;
             AuditLog::create($al);
         }
+
+        // 13. Provision User accounts for all employees and sync credentials CSV
+        app(\App\Services\EmployeeCredentialsService::class)->syncAllEmployees('password');
     }
 }

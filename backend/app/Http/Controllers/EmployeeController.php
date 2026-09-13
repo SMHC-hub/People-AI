@@ -3,9 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Employee;
+use App\Models\User;
+use App\Services\EmployeeCredentialsService;
 use App\Services\MLServiceClient;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 
 class EmployeeController extends Controller
 {
@@ -66,10 +69,29 @@ class EmployeeController extends Controller
         $validated['tenant_id'] = $request->user()->tenant_id;
         $validated['status'] = $validated['status'] ?? 'active';
 
-        $employee = Employee::create($validated);
-        $employee->load(['department', 'position', 'user']);
+        $password = $request->input('password', 'password');
 
-        return $this->success($employee, 'Employee created successfully', 201);
+        if (empty($validated['user_id'])) {
+            $user = User::firstOrCreate(
+                ['email' => $validated['email']],
+                [
+                    'name' => $validated['first_name'] . ' ' . $validated['last_name'],
+                    'password' => Hash::make($password),
+                    'role' => 'employee',
+                    'tenant_id' => $validated['tenant_id'],
+                    'email_verified_at' => now(),
+                ]
+            );
+            $validated['user_id'] = $user->id;
+        }
+
+        $employee = Employee::create($validated);
+        $employee->load(['department', 'position', 'user', 'location']);
+
+        // Append to employee credentials CSV
+        app(EmployeeCredentialsService::class)->appendEmployeeCredentials($employee, $password);
+
+        return $this->success($employee, 'Employee created successfully and credentials added to employee_credentials.csv', 201);
     }
 
     /**

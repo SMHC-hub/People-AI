@@ -96,8 +96,9 @@ htmlcov/
 .nyc_output/
 
 # ==========================
-# Data
+# Data & Temp
 # ==========================
 *.sqlite
 *.sqlite3
 chroma/
+scratch/

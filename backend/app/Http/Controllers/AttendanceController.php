@@ -20,7 +20,7 @@ class AttendanceController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Attendance::with('employee')
+        $query = Attendance::with(['employee.department'])
             ->where('tenant_id', $request->user()->tenant_id);
 
         if ($request->has('employee_id')) {
@@ -33,6 +33,10 @@ class AttendanceController extends Controller
 
         if ($request->has('status')) {
             $query->where('status', $request->input('status'));
+        }
+
+        if ($request->boolean('is_anomaly') || $request->input('anomalies_only') === 'true' || $request->input('anomalies_only') === '1') {
+            $query->anomalies();
         }
 
         $attendances = $query->orderBy('date', 'desc')
@@ -170,7 +174,7 @@ class AttendanceController extends Controller
     public function stats(Request $request): JsonResponse
     {
         $tenantId = $request->user()->tenant_id;
-        $dateFrom = $request->input('date_from', Carbon::now()->startOfMonth()->toDateString());
+        $dateFrom = $request->input('date_from', Carbon::now()->subDays(30)->toDateString());
         $dateTo = $request->input('date_to', Carbon::now()->toDateString());
 
         $query = Attendance::where('tenant_id', $tenantId)
@@ -182,6 +186,24 @@ class AttendanceController extends Controller
         $absentCount = (clone $query)->where('status', 'absent')->count();
         $anomalyCount = (clone $query)->where('is_anomaly', true)->count();
         $avgHoursWorked = (clone $query)->whereNotNull('hours_worked')->avg('hours_worked');
+
+        // Aggregated daily trend for the 30-day trend chart
+        $dailyTrend = (clone $query)
+            ->selectRaw('date, count(*) as total, sum(case when status in ("present", "late") then 1 else 0 end) as attended, sum(case when is_anomaly = 1 then 1 else 0 end) as anomalies')
+            ->groupBy('date')
+            ->orderBy('date', 'asc')
+            ->get()
+            ->map(function ($row) {
+                $total = (int) $row->total;
+                $attended = (int) $row->attended;
+                $rate = $total > 0 ? round(($attended / $total) * 100, 1) : 0;
+                return [
+                    'date' => Carbon::parse($row->date)->toDateString(),
+                    'attendance_rate' => $rate,
+                    'anomaly_count' => (int) $row->anomalies,
+                    'total' => $total,
+                ];
+            });
 
         return $this->success([
             'period' => [
@@ -197,6 +219,7 @@ class AttendanceController extends Controller
             'attendance_rate' => $totalRecords > 0
                 ? round(($presentCount + $lateCount) / $totalRecords * 100, 2)
                 : 0,
+            'daily_trend' => $dailyTrend,
         ]);
     }
 }

@@ -1,11 +1,22 @@
 export interface User {
   id: number
   email: string
-  full_name: string
+  name?: string
+  full_name?: string
   role: 'admin' | 'hr_manager' | 'hr_analyst' | 'manager' | 'employee'
   organization_id?: number
-  is_active: boolean
-  created_at: string
+  is_active?: boolean
+  created_at?: string
+  employee?: {
+    id?: number
+    employee_code?: string
+    position?: {
+      title?: string
+    }
+    department?: {
+      name?: string
+    }
+  }
 }
 
 export interface Department {
@@ -40,17 +51,19 @@ export interface Organization {
 
 export interface Employee {
   id: number
-  employee_id: string
+  employee_id?: string
+  employee_code?: string
   first_name: string
   last_name: string
   email: string
-  phone: string
-  department: string
-  position: string
+  phone?: string
+  department: any
+  position: any
+  location?: any
   status: 'active' | 'inactive' | 'on_leave' | 'terminated'
   hire_date: string
-  manager_id: number | null
-  salary: number
+  manager_id?: number | null
+  salary?: number
   location_id?: number
   job_satisfaction?: number
   performance_score?: number
@@ -58,45 +71,75 @@ export interface Employee {
   years_since_last_promotion?: number
   overtime_hours_avg?: number
   attrition_risk_score?: number
-  created_at: string
-  updated_at: string
+  created_at?: string
+  updated_at?: string
 }
 
 export interface Attendance {
   id: number
   employee_id: number
-  employee_name: string
+  employee_name?: string
+  employee?: {
+    id: number
+    first_name: string
+    last_name: string
+    full_name?: string
+    employee_code?: string
+    department?: {
+      id: number
+      name: string
+    }
+  }
   date: string
   check_in: string | null
   check_out: string | null
-  status: 'present' | 'absent' | 'late' | 'half_day' | 'on_leave'
+  status: string
   hours_worked: number | null
   is_anomaly: boolean
   anomaly_score?: number
-  anomaly_reason: string | null
+  anomaly_reason?: string | null
+}
+
+export interface DailyAttendanceTrend {
+  date: string
+  attendance_rate: number
+  anomaly_count: number
+  total: number
 }
 
 export interface AttendanceStats {
-  total_employees: number
-  present_today: number
-  absent_today: number
-  late_today: number
+  period?: {
+    from: string
+    to: string
+  }
+  total_records?: number
+  total_employees?: number
+  present?: number
+  late?: number
+  absent?: number
+  anomalies?: number
+  average_hours_worked?: number
   attendance_rate: number
-  anomaly_count: number
+  present_today?: number
+  absent_today?: number
+  late_today?: number
+  anomaly_count?: number
+  daily_trend?: DailyAttendanceTrend[]
 }
 
 export interface Leave {
   id: number
   employee_id: number
-  employee_name: string
-  leave_type: 'annual' | 'sick' | 'personal' | 'maternity' | 'paternity' | 'unpaid'
+  employee_name?: string
+  leave_type?: 'annual' | 'sick' | 'personal' | 'maternity' | 'paternity' | 'unpaid' | string
+  type?: string
   start_date: string
   end_date: string
   days: number
   reason: string
   status: 'pending' | 'approved' | 'rejected'
-  approved_by: number | null
-  created_at: string
+  approved_by?: number | null
+  created_at?: string
 }
 
 export interface LeaveBalance {
@@ -126,20 +169,23 @@ export interface Payroll {
     department: string
     position: string
   }
-  month: string
-  base_salary: number
-  overtime_hours: number
-  overtime_pay: number
-  bonus: number
+  month?: string
+  pay_period?: string
+  base_salary?: number
+  gross_pay?: number
+  net_pay?: number
+  net_salary?: number
+  overtime_hours?: number
+  overtime_pay?: number
+  bonus?: number
   deductions: number
-  net_salary: number
-  payment_method: string
-  is_anomaly: boolean
+  payment_method?: string
+  is_anomaly?: boolean
   anomaly_type?: string
   anomaly_score?: number
   anomaly_explanation?: string
-  review_status: 'pending' | 'reviewed' | 'escalated'
-  created_at: string
+  review_status?: 'pending' | 'reviewed' | 'escalated'
+  created_at?: string
 }
 
 export interface PayrollStats {
@@ -154,7 +200,7 @@ export interface PayrollStats {
 export interface PerformanceReview {
   id: number
   employee_id: number
-  reviewer_id: number
+  reviewer_id?: number
   employee?: {
     id: number
     first_name: string
@@ -168,11 +214,15 @@ export interface PerformanceReview {
   }
   review_period: string
   rating: number
-  goals_met: number
-  promotion_recommended: boolean
-  notes: string
-  created_at: string
+  goals_met?: number
+  promotion_recommended?: boolean
+  notes?: string
+  feedback?: string
+  review_date?: string
+  created_at?: string
 }
+
+export type Performance = PerformanceReview
 
 export interface PerformanceStats {
   total_reviews: number
@@ -191,6 +241,7 @@ export interface WorkforceStats {
   overall_health_score: number
   avg_turnover_risk: number
   avg_job_satisfaction: number
+  departments?: { name: string; headcount: number; high_risk_count: number }[]
 }
 
 export interface DepartmentRisk {
@@ -301,3 +352,32 @@ export interface LoginResponse {
   token_type: string
   user: User
 }
+
+export interface LeaveCategoryBalance {
+  total: number
+  used: number
+  remaining: number
+}
+
+export interface LeaveBalances {
+  annual: LeaveCategoryBalance
+  sick: LeaveCategoryBalance
+  personal: LeaveCategoryBalance
+  pending_count: number
+}
+
+export interface PortalDashboardData {
+  employee: Employee
+  today_attendance: Attendance | null
+  attendance_stats: {
+    days_present: number
+    total_hours: number
+    punctuality_rate: number
+  }
+  recent_attendance: Attendance[]
+  leave_balances: LeaveBalances
+  recent_leaves: Leave[]
+  latest_payslip: Payroll | null
+  latest_performance: PerformanceReview | null
+}
+

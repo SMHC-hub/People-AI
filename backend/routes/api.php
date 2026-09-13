@@ -6,6 +6,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ChatbotController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\EmployeePortalController;
 use App\Http\Controllers\LeaveController;
 use App\Http\Controllers\ModelOpsController;
 use App\Http\Controllers\PayrollController;
@@ -117,4 +118,17 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     // Department routes
     Route::apiResource('departments', DepartmentController::class);
+
+    // Employee Portal self-service routes
+    Route::prefix('portal')->group(function () {
+        Route::get('/dashboard', [EmployeePortalController::class, 'dashboard']);
+        Route::get('/profile', [EmployeePortalController::class, 'profile']);
+        Route::get('/attendance', [EmployeePortalController::class, 'attendance']);
+        Route::post('/check-in', [EmployeePortalController::class, 'checkIn']);
+        Route::post('/check-out', [EmployeePortalController::class, 'checkOut']);
+        Route::get('/leaves', [EmployeePortalController::class, 'leaves']);
+        Route::post('/leaves', [EmployeePortalController::class, 'storeLeave']);
+        Route::get('/payrolls', [EmployeePortalController::class, 'payrolls']);
+        Route::get('/performances', [EmployeePortalController::class, 'performances']);
+    });
 });

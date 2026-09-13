@@ -2,22 +2,40 @@
 import { ref, onMounted } from 'vue'
 import { useLeavesStore } from '@/stores/leaves'
 import { createLeave, approveLeave, rejectLeave } from '@/api/leaves'
+import PageHeader from '@/components/PageHeader.vue'
+import StatusBadge from '@/components/StatusBadge.vue'
 import NeumorphicCard from '@/components/NeumorphicCard.vue'
 import NeumorphicStatCard from '@/components/NeumorphicStatCard.vue'
-import NeumorphicButton from '@/components/NeumorphicButton.vue'
-import NeumorphicBadge from '@/components/NeumorphicBadge.vue'
+import LoadingSkeleton from '@/components/LoadingSkeleton.vue'
+import { formatDate } from '@/utils/formatters'
 
 const store = useLeavesStore()
 
 const showModal = ref(false)
 const submitting = ref(false)
 
+function getTodayString(offsetDays = 0) {
+  const d = new Date()
+  if (offsetDays) d.setDate(d.getDate() + offsetDays)
+  return d.toISOString().split('T')[0]
+}
+
 const leaveForm = ref({
   leave_type: 'annual' as string,
-  start_date: '',
-  end_date: '',
+  start_date: getTodayString(1),
+  end_date: getTodayString(3),
   reason: '',
 })
+
+function openRequestModal() {
+  leaveForm.value = {
+    leave_type: 'annual',
+    start_date: getTodayString(1),
+    end_date: getTodayString(3),
+    reason: '',
+  }
+  showModal.value = true
+}
 
 const leaveTypes = [
   { value: 'annual', label: 'Annual Leave' },
@@ -28,25 +46,17 @@ const leaveTypes = [
   { value: 'unpaid', label: 'Unpaid Leave' },
 ]
 
-function getStatusBadge(status: string): 'warning' | 'success' | 'danger' | 'neutral' {
-  switch (status) {
-    case 'pending':
-      return 'warning'
-    case 'approved':
-      return 'success'
-    case 'rejected':
-      return 'danger'
-    default:
-      return 'neutral'
-  }
-}
-
 async function handleSubmit() {
   submitting.value = true
   try {
     await createLeave(leaveForm.value)
     showModal.value = false
-    leaveForm.value = { leave_type: 'annual', start_date: '', end_date: '', reason: '' }
+    leaveForm.value = {
+      leave_type: 'annual',
+      start_date: getTodayString(1),
+      end_date: getTodayString(3),
+      reason: '',
+    }
     await store.fetchLeaves()
   } finally {
     submitting.value = false
@@ -69,129 +79,115 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="space-y-8 pb-12">
-    <!-- Header -->
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-      <div>
-        <h2 class="text-2xl font-black tracking-tight text-neu-text">
-          Leave & Absence Management
-        </h2>
-        <p class="text-sm text-neu-muted mt-1">
-          Approve PTO requests, track department absenteeism, and calculate leave liability.
-        </p>
-      </div>
-
-      <div class="flex items-center space-x-3">
-        <NeumorphicButton variant="primary" size="sm" @click="showModal = true">
-          <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <div class="space-y-6 pb-12">
+    <!-- Page Header -->
+    <PageHeader
+      title="Leaves"
+      subtitle="Manage employee absence and leave requests."
+    >
+      <template #action>
+        <button
+          @click="openRequestModal"
+          type="button"
+          class="btn-primary flex items-center space-x-2 px-4 py-2 text-xs font-semibold focus:outline-none"
+        >
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
-          Submit Leave Request
-        </NeumorphicButton>
-      </div>
+          <span>Request Leave</span>
+        </button>
+      </template>
+    </PageHeader>
+
+    <!-- 4 Clean KPIs -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <NeumorphicStatCard
+        title="Annual Balance"
+        value="14 days"
+        caption="Company average"
+      />
+      <NeumorphicStatCard
+        title="Pending Approvals"
+        :value="store.leaves.filter(l => l.status === 'pending').length || 2"
+        change="Requires action"
+        changeType="negative"
+      />
+      <NeumorphicStatCard
+        title="On Leave Today"
+        value="6"
+        caption="Scheduled away"
+      />
+      <NeumorphicStatCard
+        title="Sick Leave Used"
+        value="2.1 days"
+        caption="YTD average"
+      />
     </div>
 
-    <!-- Balance Summary Grid -->
-    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-      <div class="p-4 rounded-2xl bg-neu-base shadow-neu-flat text-center border border-white/40">
-        <p class="text-2xl font-black text-neu-primary">12</p>
-        <p class="text-xs font-bold text-neu-muted mt-1 uppercase">Annual Days</p>
-      </div>
-      <div class="p-4 rounded-2xl bg-neu-base shadow-neu-flat text-center border border-white/40">
-        <p class="text-2xl font-black text-amber-600">8</p>
-        <p class="text-xs font-bold text-neu-muted mt-1 uppercase">Sick Days</p>
-      </div>
-      <div class="p-4 rounded-2xl bg-neu-base shadow-neu-flat text-center border border-white/40">
-        <p class="text-2xl font-black text-emerald-600">3</p>
-        <p class="text-xs font-bold text-neu-muted mt-1 uppercase">Personal</p>
-      </div>
-      <div class="p-4 rounded-2xl bg-neu-base shadow-neu-flat text-center border border-white/40">
-        <p class="text-2xl font-black text-neu-text">23</p>
-        <p class="text-xs font-bold text-neu-muted mt-1 uppercase">Remaining</p>
-      </div>
-      <div class="p-4 rounded-2xl bg-neu-base shadow-neu-flat text-center border border-white/40">
-        <p class="text-2xl font-black text-rose-600">12</p>
-        <p class="text-xs font-bold text-neu-muted mt-1 uppercase">Total Used</p>
-      </div>
-      <div class="p-4 rounded-2xl bg-neu-base shadow-neu-flat text-center border border-white/40">
-        <p class="text-2xl font-black text-neu-muted">35</p>
-        <p class="text-xs font-bold text-neu-muted mt-1 uppercase">Allocated</p>
-      </div>
-    </div>
-
-    <!-- Requests Table Card -->
-    <NeumorphicCard>
-      <div class="pb-4 border-b border-neu-border/50 flex items-center justify-between">
-        <div>
-          <h3 class="text-base font-extrabold text-neu-text">Employee Leave Requests</h3>
-          <p class="text-xs text-neu-muted">Pending manager approval queue.</p>
-        </div>
+    <!-- Leaves Requests Table -->
+    <NeumorphicCard class="p-0 overflow-hidden">
+      <div class="p-4 border-b border-neu-border/40 bg-neu-surface/40 flex items-center justify-between">
+        <h2 class="text-sm font-bold text-neu-text tracking-tight">Leave Requests</h2>
+        <span class="text-xs text-neu-muted">{{ store.leaves.length }} records</span>
       </div>
 
-      <div class="overflow-x-auto mt-4">
-        <table class="w-full text-left text-sm">
+      <LoadingSkeleton v-if="store.loading" type="table" :rows="5" />
+
+      <div v-else-if="store.leaves.length === 0" class="p-8 text-center text-xs text-neu-muted">
+        No leave requests found.
+      </div>
+
+      <div v-else class="overflow-x-auto">
+        <table class="w-full text-left text-xs border-collapse">
           <thead>
-            <tr class="text-xs font-bold uppercase tracking-wider text-neu-muted border-b border-neu-border/60">
-              <th class="py-3.5 px-4">Employee</th>
-              <th class="py-3.5 px-4">Leave Type</th>
-              <th class="py-3.5 px-4">Duration</th>
-              <th class="py-3.5 px-4 text-center">Days</th>
-              <th class="py-3.5 px-4">Reason</th>
-              <th class="py-3.5 px-4 text-center">Status</th>
-              <th class="py-3.5 px-4 text-right">Actions</th>
+            <tr class="text-[11px] font-bold uppercase tracking-wider text-neu-muted border-b border-neu-border/40 bg-neu-surface/50">
+              <th class="py-3 px-5">Employee</th>
+              <th class="py-3 px-4">Leave Type</th>
+              <th class="py-3 px-4">Dates</th>
+              <th class="py-3 px-4 text-center">Days</th>
+              <th class="py-3 px-4 text-center">Status</th>
+              <th class="py-3 px-5 text-right">Action</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-neu-border/40">
-            <tr v-if="store.loading">
-              <td colspan="7" class="py-8 text-center text-neu-muted font-bold">Loading requests...</td>
-            </tr>
-            <tr v-else-if="store.leaves.length === 0">
-              <td colspan="7" class="py-8 text-center text-neu-muted">No pending leave requests</td>
-            </tr>
+          <tbody class="divide-y divide-neu-border/30">
             <tr
-              v-else
               v-for="leave in store.leaves"
               :key="leave.id"
-              class="hover:bg-neu-base/60 transition-colors duration-150"
+              class="hover:bg-neu-base/40 transition-colors"
             >
-              <td class="py-3.5 px-4 font-extrabold text-neu-text">
-                {{ leave.employee_name }}
+              <td class="py-3 px-5 font-semibold text-neu-text">
+                {{ leave.employee_name || `Employee #${leave.employee_id}` }}
               </td>
-              <td class="py-3.5 px-4 capitalize font-semibold text-neu-text text-xs">
+              <td class="py-3 px-4 text-neu-text capitalize">
                 {{ leave.leave_type }}
               </td>
-              <td class="py-3.5 px-4 text-xs font-mono text-neu-muted">
-                {{ leave.start_date }} &rarr; {{ leave.end_date }}
+              <td class="py-3 px-4 text-neu-muted">
+                {{ formatDate(leave.start_date) }} to {{ formatDate(leave.end_date) }}
               </td>
-              <td class="py-3.5 px-4 text-center font-black text-xs">
-                {{ leave.days }}
+              <td class="py-3 px-4 text-center text-neu-text font-semibold">
+                {{ leave.days || 1 }}
               </td>
-              <td class="py-3.5 px-4 text-xs text-neu-muted max-w-xs truncate">
-                {{ leave.reason }}
+              <td class="py-3 px-4 text-center">
+                <StatusBadge :status="leave.status" size="sm" />
               </td>
-              <td class="py-3.5 px-4 text-center">
-                <NeumorphicBadge :variant="getStatusBadge(leave.status)" size="sm">
-                  {{ leave.status.toUpperCase() }}
-                </NeumorphicBadge>
-              </td>
-              <td class="py-3.5 px-4 text-right">
-                <div v-if="leave.status === 'pending'" class="flex items-center justify-end space-x-2">
-                  <NeumorphicButton
-                    variant="primary"
-                    size="sm"
+              <td class="py-3 px-5 text-right space-x-2">
+                <template v-if="leave.status === 'pending'">
+                  <button
                     @click="handleApprove(leave.id)"
+                    type="button"
+                    class="text-xs font-semibold text-emerald-600 hover:underline focus:outline-none"
                   >
                     Approve
-                  </NeumorphicButton>
-                  <NeumorphicButton
-                    variant="danger"
-                    size="sm"
+                  </button>
+                  <button
                     @click="handleReject(leave.id)"
+                    type="button"
+                    class="text-xs font-semibold text-rose-600 hover:underline focus:outline-none"
                   >
                     Reject
-                  </NeumorphicButton>
-                </div>
-                <span v-else class="text-xs text-neu-muted font-mono">-</span>
+                  </button>
+                </template>
+                <span v-else class="text-xs text-neu-muted">&ndash;</span>
               </td>
             </tr>
           </tbody>
@@ -199,71 +195,78 @@ onMounted(() => {
       </div>
     </NeumorphicCard>
 
-    <!-- Submit Leave Modal -->
+    <!-- Request Modal -->
     <div
       v-if="showModal"
-      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-xs"
       @click.self="showModal = false"
     >
-      <div class="w-full max-w-md rounded-3xl bg-neu-surface shadow-neu-raised border border-white/80 p-6 space-y-5">
-        <div class="flex items-center justify-between pb-3 border-b border-neu-border/50">
-          <h3 class="text-base font-black text-neu-text tracking-tight">Submit Leave Request</h3>
-          <button @click="showModal = false" class="text-neu-muted hover:text-neu-text">&times;</button>
+      <NeumorphicCard class="max-w-md w-full p-6 space-y-4 shadow-neu-flat-lg">
+        <div class="flex items-center justify-between pb-3 border-b border-neu-border/40">
+          <h3 class="text-sm font-bold text-neu-text">Submit Leave Request</h3>
+          <button @click="showModal = false" class="text-neu-muted hover:text-neu-text text-sm font-bold">&times;</button>
         </div>
 
-        <form @submit.prevent="handleSubmit" class="space-y-4">
-          <div class="space-y-1">
-            <label class="block text-xs font-bold uppercase tracking-wider text-neu-muted">Leave Type</label>
+        <form @submit.prevent="handleSubmit" class="space-y-3 text-xs">
+          <div>
+            <label class="block font-semibold text-neu-text mb-1">Leave Type</label>
             <select
               v-model="leaveForm.leave_type"
-              class="w-full px-4 py-2.5 rounded-2xl bg-neu-base shadow-neu-inset text-xs font-semibold text-neu-text border border-white/40 focus:outline-none"
+              class="w-full px-3 py-2 rounded-xl bg-neu-base shadow-neu-inset text-xs font-medium text-neu-text focus:outline-none"
             >
-              <option v-for="lt in leaveTypes" :key="lt.value" :value="lt.value">{{ lt.label }}</option>
+              <option v-for="t in leaveTypes" :key="t.value" :value="t.value">{{ t.label }}</option>
             </select>
           </div>
 
           <div class="grid grid-cols-2 gap-3">
-            <div class="space-y-1">
-              <label class="block text-xs font-bold uppercase tracking-wider text-neu-muted">Start Date</label>
+            <div>
+              <label class="block font-semibold text-neu-text mb-1">Start Date</label>
               <input
                 v-model="leaveForm.start_date"
                 type="date"
                 required
-                class="w-full px-4 py-2 rounded-2xl bg-neu-base shadow-neu-inset text-xs font-semibold text-neu-text border border-white/40 focus:outline-none"
+                class="w-full px-3 py-2 rounded-xl bg-neu-base shadow-neu-inset text-xs text-neu-text focus:outline-none"
               />
             </div>
-            <div class="space-y-1">
-              <label class="block text-xs font-bold uppercase tracking-wider text-neu-muted">End Date</label>
+            <div>
+              <label class="block font-semibold text-neu-text mb-1">End Date</label>
               <input
                 v-model="leaveForm.end_date"
                 type="date"
                 required
-                class="w-full px-4 py-2 rounded-2xl bg-neu-base shadow-neu-inset text-xs font-semibold text-neu-text border border-white/40 focus:outline-none"
+                class="w-full px-3 py-2 rounded-xl bg-neu-base shadow-neu-inset text-xs text-neu-text focus:outline-none"
               />
             </div>
           </div>
 
-          <div class="space-y-1">
-            <label class="block text-xs font-bold uppercase tracking-wider text-neu-muted">Reason</label>
+          <div>
+            <label class="block font-semibold text-neu-text mb-1">Reason (Optional)</label>
             <textarea
               v-model="leaveForm.reason"
-              rows="3"
-              required
-              placeholder="State reason for absence..."
-              class="w-full px-4 py-2.5 rounded-2xl bg-neu-base shadow-neu-inset text-xs text-neu-text border border-white/40 focus:outline-none resize-none"
+              rows="2"
+              class="w-full p-3 rounded-xl bg-neu-base shadow-neu-inset text-xs text-neu-text focus:outline-none"
+              placeholder="Brief explanation..."
             ></textarea>
           </div>
 
-          <div class="flex items-center justify-end space-x-3 pt-2">
-            <NeumorphicButton variant="default" size="sm" type="button" @click="showModal = false">
+          <div class="flex items-center justify-end space-x-3 pt-3 border-t border-neu-border/40">
+            <button
+              @click="showModal = false"
+              type="button"
+              class="btn-secondary px-4 py-2 text-xs font-semibold focus:outline-none"
+            >
               Cancel
-            </NeumorphicButton>
-            <NeumorphicButton variant="primary" size="sm" type="submit" :loading="submitting">
-              Submit Request
-            </NeumorphicButton>
+            </button>
+            <button
+              type="submit"
+              :disabled="submitting"
+              class="btn-primary px-5 py-2 text-xs font-semibold focus:outline-none disabled:opacity-50"
+            >
+              {{ submitting ? 'Submitting...' : 'Submit Request' }}
+            </button>
           </div>
         </form>
-      </div>
+      </NeumorphicCard>
     </div>
   </div>
 </template>

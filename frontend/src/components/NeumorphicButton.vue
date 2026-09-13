@@ -1,6 +1,6 @@
 <script setup lang="ts">
 interface Props {
-  variant?: 'default' | 'primary' | 'danger' | 'ghost' | 'inset'
+  variant?: 'default' | 'primary' | 'accent' | 'danger' | 'ghost' | 'inset'
   size?: 'sm' | 'md' | 'lg'
   disabled?: boolean
   loading?: boolean
@@ -25,15 +25,16 @@ defineEmits<{
     :type="type"
     :disabled="disabled || loading"
     :class="[
-      'inline-flex items-center justify-center font-medium transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed',
-      size === 'sm' && 'px-3 py-1.5 text-xs rounded-neu-sm gap-1.5',
-      size === 'md' && 'px-4 py-2 text-sm rounded-neu gap-2',
-      size === 'lg' && 'px-6 py-3 text-base rounded-neu-lg gap-2.5',
-      variant === 'default' && 'neu-btn hover:text-primary',
-      variant === 'primary' && 'neu-btn-primary',
-      variant === 'danger' && 'bg-status-danger text-white rounded-neu shadow-md hover:bg-red-700',
-      variant === 'ghost' && 'bg-transparent hover:bg-surface text-text-secondary hover:text-text',
-      variant === 'inset' && 'neu-pressed text-primary font-semibold',
+      'inline-flex items-center justify-center font-semibold transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed select-none',
+      size === 'sm' && 'px-3 py-1.5 text-xs rounded-xl gap-1.5',
+      size === 'md' && 'px-4 py-2 text-xs rounded-xl gap-2',
+      size === 'lg' && 'px-6 py-2.5 text-sm rounded-xl gap-2.5',
+      variant === 'default' && 'btn-secondary',
+      variant === 'primary' && 'btn-primary',
+      variant === 'accent' && 'btn-accent',
+      variant === 'danger' && 'bg-rose-600 text-white rounded-xl shadow-md hover:bg-rose-700',
+      variant === 'ghost' && 'bg-transparent hover:bg-neu-surface text-neu-muted hover:text-neu-text',
+      variant === 'inset' && 'shadow-neu-inset text-neu-primary font-semibold',
     ]"
     @click="$emit('click', $event)"
   >

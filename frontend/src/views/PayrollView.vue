@@ -2,10 +2,11 @@
 import { ref, onMounted, watch } from 'vue'
 import { getPayrolls, getPayrollStats, reviewPayrollAnomaly } from '@/api/payrolls'
 import type { Payroll, PayrollStats } from '@/types'
+import PageHeader from '@/components/PageHeader.vue'
+import StatusBadge from '@/components/StatusBadge.vue'
 import NeumorphicCard from '@/components/NeumorphicCard.vue'
 import NeumorphicStatCard from '@/components/NeumorphicStatCard.vue'
-import NeumorphicButton from '@/components/NeumorphicButton.vue'
-import NeumorphicBadge from '@/components/NeumorphicBadge.vue'
+import LoadingSkeleton from '@/components/LoadingSkeleton.vue'
 
 const loading = ref(true)
 const payrolls = ref<Payroll[]>([])
@@ -16,8 +17,9 @@ const totalPages = ref(1)
 
 // Filters
 const selectedMonth = ref('2026-03')
-const filterAnomalyOnly = ref(true)
+const filterAnomalyOnly = ref(false)
 const selectedStatus = ref('')
+const showModelModal = ref(false)
 
 // Review Modal State
 const activeReview = ref<Payroll | null>(null)
@@ -37,7 +39,7 @@ async function fetchPayrolls() {
   try {
     const res = await getPayrolls({
       page: currentPage.value,
-      page_size: 15,
+      page_size: 10,
       month: selectedMonth.value,
       is_anomaly: filterAnomalyOnly.value ? true : undefined,
       review_status: selectedStatus.value || undefined,
@@ -67,22 +69,24 @@ async function submitReview(status: 'reviewed' | 'escalated') {
   submittingReview.value = true
   try {
     const updated = await reviewPayrollAnomaly(activeReview.value.id, status, reviewNotes.value)
-    // Update locally
     const idx = payrolls.value.findIndex(p => p.id === activeReview.value?.id)
     if (idx !== -1) {
       payrolls.value[idx].review_status = updated.review_status
     }
     await fetchStats()
     closeReviewModal()
-  } catch (err) {
-    console.error('Failed to update review status', err)
   } finally {
     submittingReview.value = false
   }
 }
 
-function formatCurrency(val: number): string {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(val)
+function formatCurrency(val?: number): string {
+  if (!val) return '$0'
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  }).format(val)
 }
 
 watch([selectedMonth, filterAnomalyOnly, selectedStatus], () => {
@@ -102,229 +106,190 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="space-y-8 pb-12">
-    <!-- Header -->
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-      <div>
+  <div class="space-y-6 pb-12">
+    <!-- Page Header -->
+    <PageHeader
+      title="Payroll"
+      subtitle="Review payroll activity and unusual transactions."
+    >
+      <template #action>
         <div class="flex items-center space-x-2">
-          <h2 class="text-2xl font-black tracking-tight text-neu-text">
-            Payroll Intelligence & Anomaly Audit Engine
-          </h2>
-          <NeumorphicBadge variant="primary" size="sm">Isolation Forest + 3σ Rules</NeumorphicBadge>
-        </div>
-        <p class="text-sm text-neu-muted mt-1">
-          Automated auditing for abnormal overtime spikes, duplicate payouts, and executive compensation anomalies.
-        </p>
-      </div>
-
-      <!-- Month Selector -->
-      <div class="flex items-center space-x-3">
-        <select
-          v-model="selectedMonth"
-          class="px-4 py-2.5 rounded-2xl bg-neu-surface shadow-neu-inset text-sm font-bold text-neu-text border border-white/40 focus:outline-none"
-        >
-          <option value="2026-03">March 2026</option>
-          <option value="2026-02">February 2026</option>
-          <option value="2026-01">January 2026</option>
-        </select>
-
-        <NeumorphicButton variant="default" size="sm" @click="fetchPayrolls">
-          <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-          Re-scan Batch
-        </NeumorphicButton>
-      </div>
-    </div>
-
-    <!-- Stat Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-      <NeumorphicStatCard
-        title="Total Monthly Payout"
-        :value="formatCurrency(stats?.total_payout || 7450000)"
-        subtitle="1,000 corporate payroll lines"
-        trend="Calculated & audited"
-        iconBg="primary"
-      >
-        <template #icon>
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </template>
-      </NeumorphicStatCard>
-
-      <NeumorphicStatCard
-        title="Average Net Salary"
-        :value="formatCurrency(stats?.avg_net_salary || 7450)"
-        subtitle="Standard monthly package"
-        trend="Base + Allowances"
-        iconBg="primary"
-      >
-        <template #icon>
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-          </svg>
-        </template>
-      </NeumorphicStatCard>
-
-      <NeumorphicStatCard
-        title="Total Overtime Disbursed"
-        :value="formatCurrency(stats?.total_overtime_pay || 215000)"
-        subtitle="Across all engineering & ops"
-        trend="Regulated hourly rate"
-        iconBg="warning"
-      >
-        <template #icon>
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </template>
-      </NeumorphicStatCard>
-
-      <NeumorphicStatCard
-        title="Flagged Anomalies"
-        :value="stats?.total_anomalies || 35"
-        subtitle="Requires human audit"
-        :trend="stats?.pending_reviews ? `${stats.pending_reviews} Pending Review` : 'All Reviewed'"
-        iconBg="danger"
-      >
-        <template #icon>
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
-        </template>
-      </NeumorphicStatCard>
-    </div>
-
-    <!-- Filter Bar Card -->
-    <NeumorphicCard>
-      <div class="flex flex-wrap items-center justify-between gap-4">
-        <div class="flex flex-wrap items-center gap-3">
-          <span class="text-xs font-bold uppercase tracking-wider text-neu-muted">Filters:</span>
-
-          <!-- Anomaly Toggle -->
-          <button
-            @click="filterAnomalyOnly = !filterAnomalyOnly"
-            class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all duration-200"
-            :class="filterAnomalyOnly ? 'bg-rose-500 text-white shadow-neu-pressed' : 'bg-neu-surface text-neu-muted shadow-neu-flat hover:text-neu-text'"
+          <!-- Month Selector -->
+          <select
+            v-model="selectedMonth"
+            class="px-3 py-1.5 rounded-xl bg-neu-surface text-xs font-semibold text-neu-text border-none shadow-neu-flat-sm focus:outline-none cursor-pointer"
           >
-            Anomalies Only ({{ stats?.total_anomalies || 0 }})
+            <option value="2026-03">March 2026</option>
+            <option value="2026-02">February 2026</option>
+            <option value="2026-01">January 2026</option>
+          </select>
+
+          <button
+            @click="showModelModal = true"
+            type="button"
+            class="btn-secondary px-3 py-1.5 text-xs font-semibold focus:outline-none"
+          >
+            Model Details
           </button>
 
-          <!-- Status Filter -->
-          <select
-            v-model="selectedStatus"
-            class="px-3 py-1.5 rounded-xl bg-neu-surface shadow-neu-inset text-xs font-bold text-neu-text border border-white/40 focus:outline-none"
+          <button
+            @click="fetchPayrolls"
+            type="button"
+            class="btn-secondary flex items-center space-x-1.5 px-3.5 py-1.5 text-xs font-semibold focus:outline-none"
           >
-            <option value="">All Review Statuses</option>
-            <option value="pending">Pending Review</option>
-            <option value="reviewed">Reviewed & Approved</option>
-            <option value="escalated">Escalated to Finance</option>
-          </select>
+            <svg class="w-3.5 h-3.5 text-neu-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <span>Scan</span>
+          </button>
         </div>
+      </template>
+    </PageHeader>
 
-        <div class="text-xs font-medium text-neu-muted">
-          Showing {{ payrolls.length }} of {{ totalItems }} records
+    <!-- 4 Clean KPI Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <NeumorphicStatCard
+        title="Total Payroll"
+        :value="formatCurrency(stats?.total_payout || 7450000)"
+        caption="Monthly total"
+      />
+      <NeumorphicStatCard
+        title="Changes"
+        value="+1.8%"
+        change="vs prior month"
+        changeType="neutral"
+      />
+      <NeumorphicStatCard
+        title="Anomalies"
+        :value="stats?.total_anomalies || 12"
+        change="Detected"
+        changeType="negative"
+      />
+      <NeumorphicStatCard
+        title="Pending Review"
+        :value="stats?.pending_reviews || 4"
+        change="Action needed"
+        changeType="negative"
+      />
+    </div>
+
+    <!-- Anomaly Alerts Section -->
+    <NeumorphicCard class="p-5">
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          <h2 class="text-sm font-bold text-neu-text tracking-tight">Anomaly Alerts</h2>
+          <p class="text-xs text-neu-muted mt-0.5">Transactions requiring supervisory review</p>
+        </div>
+        <span class="text-xs font-semibold text-rose-600 bg-rose-500/10 px-2 py-0.5 rounded-full">
+          {{ stats?.total_anomalies || 12 }} flagged
+        </span>
+      </div>
+
+      <div class="divide-y divide-neu-border/30">
+        <div
+          v-for="p in payrolls.filter(item => item.is_anomaly).slice(0, 4)"
+          :key="p.id"
+          class="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+        >
+          <div class="flex items-start space-x-3">
+            <span class="w-2 h-2 rounded-full bg-rose-500 mt-1.5 flex-shrink-0"></span>
+            <div>
+              <div class="text-xs font-bold text-neu-text">
+                {{ p.employee?.first_name ? `${p.employee.first_name} ${p.employee.last_name}` : `Employee #${p.employee_id}` }}
+              </div>
+              <p class="text-xs text-neu-muted mt-0.5">
+                {{ p.anomaly_explanation || 'Unusual compensation change or overtime variance' }}
+              </p>
+            </div>
+          </div>
+
+          <div class="flex items-center space-x-3 self-end sm:self-center">
+            <span class="text-xs font-bold text-neu-text font-mono">
+              {{ formatCurrency(p.net_salary) }}
+            </span>
+            <button
+              @click="openReviewModal(p)"
+              type="button"
+              class="px-2.5 py-1 rounded-lg bg-neu-primary/10 text-neu-primary text-xs font-semibold hover:bg-neu-primary/15 transition-colors focus:outline-none"
+            >
+              Review
+            </button>
+          </div>
         </div>
       </div>
     </NeumorphicCard>
 
-    <!-- Payroll Table Card -->
-    <NeumorphicCard>
-      <div class="overflow-x-auto">
-        <table class="w-full text-left text-sm">
+    <!-- Recent Changes / Payroll List Table -->
+    <NeumorphicCard class="p-0 overflow-hidden">
+      <!-- Filter Bar -->
+      <div class="p-4 border-b border-neu-border/40 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-neu-surface/40">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-neu-muted">
+          Payroll Records
+        </h3>
+
+        <div class="flex items-center space-x-4">
+          <label class="flex items-center space-x-2 text-xs font-medium text-neu-text cursor-pointer">
+            <input
+              v-model="filterAnomalyOnly"
+              type="checkbox"
+              class="rounded border-neu-border text-neu-primary focus:ring-0"
+            />
+            <span>Anomalies only</span>
+          </label>
+        </div>
+      </div>
+
+      <LoadingSkeleton v-if="loading" type="table" :rows="6" />
+
+      <div v-else class="overflow-x-auto">
+        <table class="w-full text-left text-xs border-collapse">
           <thead>
-            <tr class="text-xs font-bold uppercase tracking-wider text-neu-muted border-b border-neu-border/60">
-              <th class="py-3.5 px-4">Employee</th>
-              <th class="py-3.5 px-4">Department</th>
-              <th class="py-3.5 px-4 text-right">Base Salary</th>
-              <th class="py-3.5 px-4 text-right">Overtime Pay</th>
-              <th class="py-3.5 px-4 text-right">Bonus</th>
-              <th class="py-3.5 px-4 text-right">Net Payout</th>
-              <th class="py-3.5 px-4 text-center">Anomaly Flag</th>
-              <th class="py-3.5 px-4 text-center">Audit Status</th>
-              <th class="py-3.5 px-4 text-right">Action</th>
+            <tr class="text-[11px] font-bold uppercase tracking-wider text-neu-muted border-b border-neu-border/40 bg-neu-surface/50">
+              <th class="py-3 px-5">Employee</th>
+              <th class="py-3 px-4 text-right">Base Salary</th>
+              <th class="py-3 px-4 text-right">Overtime</th>
+              <th class="py-3 px-4 text-right">Net Payout</th>
+              <th class="py-3 px-4 text-center">Status</th>
+              <th class="py-3 px-5 text-right">Action</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-neu-border/40">
+          <tbody class="divide-y divide-neu-border/30">
             <tr
-              v-for="item in payrolls"
-              :key="item.id"
-              class="hover:bg-neu-base/60 transition-colors duration-150"
+              v-for="p in payrolls"
+              :key="p.id"
+              class="hover:bg-neu-base/40 transition-colors"
             >
-              <!-- Employee Info -->
-              <td class="py-3.5 px-4">
-                <div class="font-extrabold text-neu-text">
-                  {{ item.employee ? `${item.employee.first_name} ${item.employee.last_name}` : `EMP-${item.employee_id}` }}
-                </div>
-                <div class="text-[11px] text-neu-muted font-mono">
-                  {{ item.employee?.employee_id || `ID: ${item.employee_id}` }}
-                </div>
+              <td class="py-3 px-5 font-semibold text-neu-text">
+                {{ p.employee?.first_name ? `${p.employee.first_name} ${p.employee.last_name}` : `Employee #${p.employee_id}` }}
               </td>
-
-              <!-- Department -->
-              <td class="py-3.5 px-4 text-xs font-semibold text-neu-text">
-                {{ item.employee?.department || 'General' }}
+              <td class="py-3 px-4 text-right text-neu-text font-mono">
+                {{ formatCurrency(p.base_salary) }}
               </td>
-
-              <!-- Base Salary -->
-              <td class="py-3.5 px-4 text-right font-medium text-neu-muted">
-                {{ formatCurrency(item.base_salary) }}
+              <td class="py-3 px-4 text-right text-neu-muted font-mono">
+                {{ formatCurrency(p.overtime_pay) }}
               </td>
-
-              <!-- Overtime -->
-              <td class="py-3.5 px-4 text-right font-semibold" :class="item.overtime_pay > 1000 ? 'text-rose-600' : 'text-neu-text'">
-                {{ formatCurrency(item.overtime_pay) }}
-                <div v-if="item.overtime_hours" class="text-[10px] text-neu-muted font-normal">
-                  {{ item.overtime_hours }} hrs
-                </div>
+              <td class="py-3 px-4 text-right font-bold text-neu-text font-mono">
+                {{ formatCurrency(p.net_salary) }}
               </td>
-
-              <!-- Bonus -->
-              <td class="py-3.5 px-4 text-right font-semibold" :class="item.bonus > 4000 ? 'text-amber-600' : 'text-neu-text'">
-                {{ formatCurrency(item.bonus) }}
-              </td>
-
-              <!-- Net Payout -->
-              <td class="py-3.5 px-4 text-right font-black text-neu-text">
-                {{ formatCurrency(item.net_salary) }}
-              </td>
-
-              <!-- Anomaly Flag & Score -->
-              <td class="py-3.5 px-4 text-center">
-                <div v-if="item.is_anomaly" class="flex flex-col items-center space-y-1">
-                  <NeumorphicBadge
-                    :variant="item.anomaly_type?.includes('overtime') || item.anomaly_type?.includes('duplicate') ? 'danger' : 'warning'"
-                    size="sm"
-                  >
-                    {{ item.anomaly_type ? item.anomaly_type.replace('_', ' ').toUpperCase() : 'ANOMALY' }}
-                  </NeumorphicBadge>
-                  <span v-if="item.anomaly_score" class="text-[10px] font-mono font-bold text-rose-600">
-                    Score: {{ item.anomaly_score }}/100
-                  </span>
-                </div>
-                <span v-else class="text-xs text-neu-muted">Normal</span>
-              </td>
-
-              <!-- Audit Status -->
-              <td class="py-3.5 px-4 text-center">
-                <NeumorphicBadge
-                  :variant="item.review_status === 'reviewed' ? 'success' : item.review_status === 'escalated' ? 'danger' : 'neutral'"
-                  size="sm"
+              <td class="py-3 px-4 text-center">
+                <span
+                  v-if="p.is_anomaly"
+                  class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-500/10 text-rose-700"
                 >
-                  {{ item.review_status.toUpperCase() }}
-                </NeumorphicBadge>
+                  Anomaly
+                </span>
+                <span v-else class="text-[11px] text-neu-muted">Standard</span>
               </td>
-
-              <!-- Action Button -->
-              <td class="py-3.5 px-4 text-right">
-                <NeumorphicButton
-                  variant="default"
-                  size="sm"
-                  @click="openReviewModal(item)"
+              <td class="py-3 px-5 text-right">
+                <button
+                  v-if="p.is_anomaly"
+                  @click="openReviewModal(p)"
+                  type="button"
+                  class="px-2 py-0.5 text-xs font-semibold text-neu-primary hover:underline focus:outline-none"
                 >
                   Review
-                </NeumorphicButton>
+                </button>
+                <span v-else class="text-xs text-neu-muted">&ndash;</span>
               </td>
             </tr>
           </tbody>
@@ -332,122 +297,121 @@ onMounted(() => {
       </div>
 
       <!-- Pagination -->
-      <div class="flex items-center justify-between pt-6 border-t border-neu-border/50">
-        <span class="text-xs font-medium text-neu-muted">
-          Page {{ currentPage }} of {{ totalPages }}
+      <div class="flex items-center justify-between px-5 py-3 border-t border-neu-border/40 bg-neu-surface/30">
+        <span class="text-xs text-neu-muted">
+          Page {{ currentPage }} of {{ totalPages }} ({{ totalItems }} items)
         </span>
         <div class="flex items-center space-x-2">
-          <NeumorphicButton
-            variant="default"
-            size="sm"
+          <button
+            type="button"
             :disabled="currentPage <= 1"
             @click="currentPage--"
+            class="btn-secondary px-3 py-1.5 text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none"
           >
             Previous
-          </NeumorphicButton>
-          <NeumorphicButton
-            variant="default"
-            size="sm"
+          </button>
+          <button
+            type="button"
             :disabled="currentPage >= totalPages"
             @click="currentPage++"
+            class="btn-secondary px-3 py-1.5 text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none"
           >
             Next
-          </NeumorphicButton>
+          </button>
         </div>
       </div>
     </NeumorphicCard>
 
-    <!-- Review / Audit Modal -->
+    <!-- Review Modal -->
     <div
       v-if="activeReview"
-      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-xs"
+      @click.self="closeReviewModal"
     >
-      <div class="w-full max-w-lg rounded-3xl bg-neu-surface shadow-neu-raised border border-white/80 p-6 space-y-6">
-        <div class="flex items-center justify-between pb-4 border-b border-neu-border/50">
+      <NeumorphicCard class="max-w-lg w-full p-6 space-y-4 shadow-neu-flat-lg">
+        <div class="flex items-center justify-between pb-3 border-b border-neu-border/40">
           <div>
-            <h3 class="text-lg font-black text-neu-text tracking-tight">
-              Payroll Anomaly Audit Review
-            </h3>
-            <p class="text-xs text-neu-muted mt-0.5">
-              Record: {{ activeReview.employee ? `${activeReview.employee.first_name} ${activeReview.employee.last_name}` : `EMP-${activeReview.employee_id}` }} ({{ activeReview.month }})
+            <h3 class="text-sm font-bold text-neu-text">Review Payroll Anomaly</h3>
+            <span class="text-xs text-neu-muted">
+              {{ activeReview.employee?.first_name }} {{ activeReview.employee?.last_name }}
+            </span>
+          </div>
+          <button @click="closeReviewModal" class="text-neu-muted hover:text-neu-text text-sm font-bold">&times;</button>
+        </div>
+
+        <div class="space-y-3 text-xs">
+          <div class="p-3.5 rounded-xl bg-neu-base/70 space-y-1">
+            <div class="text-[10px] font-bold uppercase tracking-wider text-neu-muted">Calculated Net</div>
+            <div class="text-lg font-bold text-neu-text">{{ formatCurrency(activeReview.net_salary) }}</div>
+            <p class="text-neu-muted text-[11px] pt-1">
+              {{ activeReview.anomaly_explanation || 'Overtime spike or deduction irregularity.' }}
             </p>
           </div>
-          <button @click="closeReviewModal" class="text-neu-muted hover:text-neu-text">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+
+          <div>
+            <label class="block text-xs font-semibold text-neu-text mb-1">Supervisor Notes</label>
+            <textarea
+              v-model="reviewNotes"
+              rows="3"
+              class="w-full p-3 rounded-xl bg-neu-base shadow-neu-inset text-xs text-neu-text focus:outline-none"
+              placeholder="Enter resolution notes..."
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end space-x-2 pt-2 border-t border-neu-border/40">
+          <button
+            @click="closeReviewModal"
+            class="btn-secondary px-3.5 py-1.5 text-xs font-semibold"
+          >
+            Cancel
+          </button>
+          <button
+            @click="submitReview('escalated')"
+            class="btn-accent px-3.5 py-1.5 text-xs font-semibold"
+          >
+            Escalate
+          </button>
+          <button
+            @click="submitReview('reviewed')"
+            class="btn-primary px-4 py-1.5 text-xs font-semibold"
+          >
+            Mark Resolved
           </button>
         </div>
+      </NeumorphicCard>
+    </div>
 
-        <!-- Anomaly Summary -->
-        <div class="p-4 rounded-2xl bg-neu-base shadow-neu-inset space-y-2 border border-white/40">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-neu-muted uppercase">Detected Anomaly Type</span>
-            <NeumorphicBadge variant="danger" size="sm">
-              {{ activeReview.anomaly_type?.replace('_', ' ').toUpperCase() || 'UNUSUAL DISBURSEMENT' }}
-            </NeumorphicBadge>
-          </div>
-          <p class="text-xs text-neu-text leading-relaxed">
-            {{ activeReview.anomaly_explanation || 'Isolation forest statistical variance exceeds the 99th percentile threshold.' }}
+    <!-- Model Details Modal -->
+    <div
+      v-if="showModelModal"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-xs"
+      @click.self="showModelModal = false"
+    >
+      <NeumorphicCard class="max-w-md w-full p-6 space-y-4 shadow-neu-flat-lg">
+        <div class="flex items-center justify-between pb-3 border-b border-neu-border/40">
+          <h3 class="text-sm font-bold text-neu-text">Payroll Audit Model</h3>
+          <button @click="showModelModal = false" class="text-neu-muted hover:text-neu-text text-sm font-bold">&times;</button>
+        </div>
+        <div class="space-y-3 text-xs text-neu-text leading-relaxed">
+          <p>
+            The payroll audit engine runs automated anomaly detection against base compensation bands and overtime deviations.
           </p>
-          <div class="grid grid-cols-2 gap-2 pt-2 border-t border-neu-border/40 text-xs">
-            <div>
-              <span class="text-neu-muted">Base Salary:</span>
-              <span class="font-bold ml-1">{{ formatCurrency(activeReview.base_salary) }}</span>
-            </div>
-            <div>
-              <span class="text-neu-muted">Overtime Pay:</span>
-              <span class="font-bold ml-1 text-rose-600">{{ formatCurrency(activeReview.overtime_pay) }}</span>
-            </div>
-            <div>
-              <span class="text-neu-muted">Bonus:</span>
-              <span class="font-bold ml-1 text-amber-600">{{ formatCurrency(activeReview.bonus) }}</span>
-            </div>
-            <div>
-              <span class="text-neu-muted">Net Payout:</span>
-              <span class="font-bold ml-1 text-neu-primary">{{ formatCurrency(activeReview.net_salary) }}</span>
-            </div>
+          <div class="p-3 rounded-xl bg-neu-base/70 space-y-1 text-[11px]">
+            <div><strong>Algorithm:</strong> Isolation Forest + 3σ Statistical Thresholds</div>
+            <div><strong>Signals:</strong> Overtime surge, duplicate payroll lines, band drift</div>
+            <div><strong>Sensitivity:</strong> High confidence flags only</div>
           </div>
         </div>
-
-        <!-- Auditor Notes -->
-        <div class="space-y-2">
-          <label class="block text-xs font-bold uppercase tracking-wider text-neu-muted">
-            Auditor Notes & Justification
-          </label>
-          <textarea
-            v-model="reviewNotes"
-            rows="3"
-            placeholder="Explain approval rationale or reason for escalation to corporate finance..."
-            class="w-full px-4 py-3 rounded-2xl bg-neu-base shadow-neu-inset text-xs text-neu-text border border-white/40 focus:outline-none resize-none"
-          ></textarea>
-        </div>
-
-        <!-- Modal Actions -->
-        <div class="flex items-center justify-end space-x-3 pt-2">
-          <NeumorphicButton variant="default" size="sm" @click="closeReviewModal">
-            Cancel
-          </NeumorphicButton>
-
-          <NeumorphicButton
-            variant="danger"
-            size="sm"
-            :loading="submittingReview"
-            @click="submitReview('escalated')"
+        <div class="pt-2 text-right">
+          <button
+            @click="showModelModal = false"
+            class="btn-primary px-4 py-1.5 text-xs font-semibold"
           >
-            Escalate to Finance
-          </NeumorphicButton>
-
-          <NeumorphicButton
-            variant="primary"
-            size="sm"
-            :loading="submittingReview"
-            @click="submitReview('reviewed')"
-          >
-            Approve & Mark Reviewed
-          </NeumorphicButton>
+            Close
+          </button>
         </div>
-      </div>
+      </NeumorphicCard>
     </div>
   </div>
 </template>

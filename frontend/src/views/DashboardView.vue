@@ -14,10 +14,10 @@ import VChart from 'vue-echarts'
 import { getWorkforceStats, getWorkforceHeatmap, getWorkforceInsights } from '@/api/workforce'
 import { getAttendanceStats } from '@/api/attendance'
 import type { WorkforceStats, DepartmentRisk, WorkforceInsight, AttendanceStats } from '@/types'
+import PageHeader from '@/components/PageHeader.vue'
 import NeumorphicCard from '@/components/NeumorphicCard.vue'
 import NeumorphicStatCard from '@/components/NeumorphicStatCard.vue'
-import NeumorphicButton from '@/components/NeumorphicButton.vue'
-import NeumorphicBadge from '@/components/NeumorphicBadge.vue'
+import LoadingSkeleton from '@/components/LoadingSkeleton.vue'
 
 use([
   CanvasRenderer,
@@ -37,116 +37,42 @@ const loading = ref(true)
 const workforceStats = ref<WorkforceStats | null>(null)
 const attendanceStats = ref<AttendanceStats | null>(null)
 const insights = ref<WorkforceInsight[]>([])
+const departmentRisks = ref<DepartmentRisk[]>([])
 
-const departmentChartOption = ref<any>({
-  title: {
-    text: 'Department Workforce & Risk',
-    textStyle: { color: '#2B3674', fontSize: 14, fontWeight: 'bold', fontFamily: 'Inter, sans-serif' },
-    left: 'left',
-  },
+const workforceChartOption = ref<any>({
   tooltip: { trigger: 'axis' },
-  grid: { top: 50, right: 20, bottom: 40, left: 40 },
+  grid: { top: 30, right: 20, bottom: 30, left: 35 },
   xAxis: {
     type: 'category',
-    data: ['R&D', 'Sales', 'Engineering', 'Marketing', 'Ops', 'Finance', 'HR'],
-    axisLine: { lineStyle: { color: '#A3AED0' } },
-    axisLabel: { color: '#707EAE', fontSize: 11 },
+    data: ['Engineering', 'Sales', 'Marketing', 'HR', 'Finance', 'Ops', 'R&D'],
+    axisLine: { lineStyle: { color: '#D8DFE8' } },
+    axisLabel: { color: '#8A94A6', fontSize: 11 },
   },
   yAxis: {
     type: 'value',
-    name: 'Employees',
-    nameTextStyle: { color: '#707EAE', fontSize: 10 },
-    splitLine: { lineStyle: { color: '#E8ECF1', type: 'dashed' } },
+    splitLine: { lineStyle: { color: '#EAEEF2', type: 'dashed' } },
+    axisLabel: { color: '#8A94A6', fontSize: 11 },
   },
   series: [
     {
-      name: 'Total Staff',
+      name: 'Employees',
       type: 'bar',
-      data: [210, 195, 180, 135, 120, 100, 60],
+      data: [180, 195, 135, 60, 100, 120, 210],
       itemStyle: {
         color: '#2D6CDF',
-        borderRadius: [6, 6, 0, 0],
+        borderRadius: [4, 4, 0, 0],
       },
-      barWidth: '35%',
+      barWidth: '32%',
     },
     {
-      name: 'High Risk',
+      name: 'Elevated Risk',
       type: 'bar',
-      data: [32, 45, 24, 18, 12, 6, 5],
+      data: [24, 45, 18, 5, 6, 12, 32],
       itemStyle: {
         color: '#EF4444',
-        borderRadius: [6, 6, 0, 0],
+        borderRadius: [4, 4, 0, 0],
       },
-      barWidth: '35%',
-    },
-  ],
-})
-
-const attendanceTrendOption = ref<any>({
-  title: {
-    text: 'Attendance Stability (30 Days)',
-    textStyle: { color: '#2B3674', fontSize: 14, fontWeight: 'bold', fontFamily: 'Inter, sans-serif' },
-    left: 'left',
-  },
-  tooltip: { trigger: 'axis' },
-  grid: { top: 50, right: 20, bottom: 40, left: 40 },
-  xAxis: {
-    type: 'category',
-    data: ['W1-M', 'W1-W', 'W1-F', 'W2-M', 'W2-W', 'W2-F', 'W3-M', 'W3-W', 'W3-F', 'W4-M', 'W4-W', 'W4-F'],
-    axisLine: { lineStyle: { color: '#A3AED0' } },
-    axisLabel: { color: '#707EAE', fontSize: 11 },
-  },
-  yAxis: {
-    type: 'value',
-    min: 85,
-    max: 100,
-    name: 'Rate (%)',
-    nameTextStyle: { color: '#707EAE', fontSize: 10 },
-    splitLine: { lineStyle: { color: '#E8ECF1', type: 'dashed' } },
-  },
-  series: [
-    {
-      type: 'line',
-      data: [94.5, 96.2, 95.0, 93.8, 95.5, 96.1, 94.2, 95.8, 96.5, 94.9, 95.2, 96.0],
-      smooth: true,
-      lineStyle: { color: '#10B981', width: 3 },
-      itemStyle: { color: '#10B981' },
-      areaStyle: {
-        color: {
-          type: 'linear',
-          x: 0,
-          y: 0,
-          x2: 0,
-          y2: 1,
-          colorStops: [
-            { offset: 0, color: 'rgba(16, 185, 129, 0.25)' },
-            { offset: 1, color: 'rgba(16, 185, 129, 0.0)' },
-          ],
-        },
-      },
-    },
-  ],
-})
-
-const turnoverRiskOption = ref<any>({
-  title: {
-    text: 'Predicted Attrition Tiers (XGBoost)',
-    textStyle: { color: '#2B3674', fontSize: 14, fontWeight: 'bold', fontFamily: 'Inter, sans-serif' },
-    left: 'left',
-  },
-  tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
-  legend: { bottom: 0, textStyle: { color: '#707EAE', fontSize: 11 } },
-  series: [
-    {
-      type: 'pie',
-      radius: ['45%', '72%'],
-      center: ['50%', '48%'],
-      data: [
-        { value: 650, name: 'Low Risk (<30%)', itemStyle: { color: '#10B981' } },
-        { value: 208, name: 'Medium Risk (30-70%)', itemStyle: { color: '#F59E0B' } },
-        { value: 142, name: 'High Risk (>70%)', itemStyle: { color: '#EF4444' } },
-      ],
-      label: { show: false },
+      barWidth: '32%',
     },
   ],
 })
@@ -155,7 +81,7 @@ async function loadDashboardData() {
   loading.value = true
   try {
     const [wfStats, attStats, heatmaps, ins] = await Promise.all([
-      getWorkforceStats(),
+      getWorkforceStats().catch(() => null),
       getAttendanceStats().catch(() => null),
       getWorkforceHeatmap().catch(() => []),
       getWorkforceInsights().catch(() => []),
@@ -165,231 +91,273 @@ async function loadDashboardData() {
     attendanceStats.value = attStats
     insights.value = ins
 
-    // Update charts if live data returns
-    if (heatmaps.length > 0) {
-      departmentChartOption.value.xAxis.data = heatmaps.map((h: DepartmentRisk) => h.department)
-      departmentChartOption.value.series[0].data = heatmaps.map((h: DepartmentRisk) => h.employee_count)
-      departmentChartOption.value.series[1].data = heatmaps.map((h: DepartmentRisk) => h.high_risk_count)
-    }
+    const depts: DepartmentRisk[] = (wfStats?.departments && wfStats.departments.length > 0)
+      ? wfStats.departments.map(d => ({
+          department: d.name,
+          employee_count: d.headcount,
+          high_risk_count: d.high_risk_count,
+          risk_percentage: d.headcount ? (d.high_risk_count / d.headcount) * 100 : 0,
+          avg_satisfaction: 3.8,
+          avg_years_promotion: 2.1,
+        }))
+      : [
+          { department: 'Engineering', employee_count: 180, high_risk_count: 24, risk_percentage: 13.3, avg_satisfaction: 3.8, avg_years_promotion: 2.1 },
+          { department: 'Sales', employee_count: 195, high_risk_count: 45, risk_percentage: 23.1, avg_satisfaction: 3.6, avg_years_promotion: 1.8 },
+          { department: 'Marketing', employee_count: 135, high_risk_count: 18, risk_percentage: 13.3, avg_satisfaction: 4.1, avg_years_promotion: 2.3 },
+          { department: 'HR', employee_count: 60, high_risk_count: 5, risk_percentage: 8.3, avg_satisfaction: 4.2, avg_years_promotion: 2.5 },
+          { department: 'Finance', employee_count: 100, high_risk_count: 6, risk_percentage: 6.0, avg_satisfaction: 3.9, avg_years_promotion: 2.0 },
+          { department: 'Operations', employee_count: 120, high_risk_count: 12, risk_percentage: 10.0, avg_satisfaction: 3.7, avg_years_promotion: 2.4 },
+        ]
 
-    if (wfStats) {
-      turnoverRiskOption.value.series[0].data = [
-        { value: wfStats.low_risk_count, name: 'Low Risk (<30%)', itemStyle: { color: '#10B981' } },
-        { value: wfStats.medium_risk_count, name: 'Medium Risk (30-70%)', itemStyle: { color: '#F59E0B' } },
-        { value: wfStats.high_risk_count, name: 'High Risk (>70%)', itemStyle: { color: '#EF4444' } },
-      ]
-    }
-  } catch (err) {
-    console.error('Failed to load dashboard data', err)
+    departmentRisks.value = depts
+
+    workforceChartOption.value.xAxis.data = depts.map(d => d.department)
+    workforceChartOption.value.series[0].data = depts.map(d => d.employee_count)
+    workforceChartOption.value.series[1].data = depts.map(d => d.high_risk_count)
   } finally {
     loading.value = false
   }
 }
 
-onMounted(() => {
-  loadDashboardData()
-})
+onMounted(loadDashboardData)
 </script>
 
 <template>
-  <div class="space-y-8 pb-12">
-    <!-- Header -->
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-      <div>
-        <h2 class="text-2xl font-black tracking-tight text-neu-text">
-          Workforce Intelligence Executive Overview
-        </h2>
-        <p class="text-sm text-neu-muted mt-1">
-          Real-time telemetry across 1,000 corporate employees, ML turnover risk, and AI synthesized recommendations.
-        </p>
-      </div>
-
-      <div class="flex items-center space-x-3">
-        <NeumorphicButton variant="default" size="sm" @click="loadDashboardData">
-          <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <div class="space-y-6 pb-12">
+    <!-- Page Header -->
+    <PageHeader
+      title="Dashboard"
+      subtitle="Your workforce at a glance."
+    >
+      <template #action>
+        <button
+          @click="loadDashboardData"
+          type="button"
+          class="btn-secondary flex items-center space-x-1.5 px-3.5 py-1.5 text-xs font-semibold focus:outline-none cursor-pointer"
+        >
+          <svg class="w-3.5 h-3.5 text-neu-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
           </svg>
-          Sync Telemetry
-        </NeumorphicButton>
+          <span>Refresh</span>
+        </button>
+      </template>
+    </PageHeader>
 
-        <NeumorphicButton variant="primary" size="sm" @click="router.push('/workforce')">
-          Attrition Heatmap
-        </NeumorphicButton>
-      </div>
+    <!-- Loading Skeleton -->
+    <div v-if="loading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <LoadingSkeleton v-for="i in 4" :key="i" type="card" />
     </div>
 
-    <!-- Stat Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+    <!-- ROW 1: 4 Clean KPI Cards -->
+    <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <!-- 1. Total Employees -->
       <NeumorphicStatCard
-        title="Total Workforce"
+        title="Employees"
         :value="workforceStats?.total_employees || 1000"
-        subtitle="Full Enterprise Roster"
-        trend="940 Active | 60 On Leave"
-        iconBg="primary"
+        change="↑ 4.2%"
+        changeType="positive"
+        caption="Active roster"
       >
         <template #icon>
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
           </svg>
         </template>
       </NeumorphicStatCard>
 
+      <!-- 2. Attrition Risk -->
       <NeumorphicStatCard
-        title="Daily Attendance Rate"
-        :value="`${attendanceStats?.attendance_rate || 95.8}%`"
-        subtitle="Logged & Verified"
-        trend="Controlled Variance"
-        iconBg="success"
+        title="Attrition Risk"
+        :value="workforceStats?.avg_turnover_risk ? (workforceStats.avg_turnover_risk * 100).toFixed(1) + '%' : '14.2%'"
+        change="Stable"
+        changeType="neutral"
+        caption="Company-wide index"
       >
         <template #icon>
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+          </svg>
+        </template>
+      </NeumorphicStatCard>
+
+      <!-- 3. Attendance -->
+      <NeumorphicStatCard
+        title="Attendance"
+        :value="`${attendanceStats?.attendance_rate || 95.8}%`"
+        change="945 present"
+        changeType="positive"
+        caption="Today's attendance"
+      >
+        <template #icon>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </template>
       </NeumorphicStatCard>
 
+      <!-- 4. Payroll Alerts -->
       <NeumorphicStatCard
-        title="Turnover Risk Score"
-        :value="workforceStats?.avg_turnover_risk ? (workforceStats.avg_turnover_risk * 100).toFixed(1) + '%' : '14.2%'"
-        subtitle="XGBoost Baseline"
-        :trend="`${workforceStats?.high_risk_count || 142} Elevated Risk Staff`"
-        iconBg="danger"
+        title="Payroll Alerts"
+        value="4"
+        change="Action needed"
+        changeType="negative"
+        caption="Pending reviews"
       >
         <template #icon>
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
-        </template>
-      </NeumorphicStatCard>
-
-      <NeumorphicStatCard
-        title="Workforce Health Index"
-        :value="`${workforceStats?.overall_health_score || 88} / 100`"
-        subtitle="Stability & Retention"
-        trend="PSI Drift: 0.04 (Healthy)"
-        iconBg="primary"
-      >
-        <template #icon>
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </template>
       </NeumorphicStatCard>
     </div>
 
-    <!-- AI Synthesized Insight Cards -->
-    <div class="space-y-4">
-      <div class="flex items-center space-x-2">
-        <span class="w-2.5 h-2.5 rounded-full bg-neu-primary animate-pulse"></span>
-        <h3 class="text-lg font-black text-neu-text tracking-tight">
-          Real-Time AI Workforce Signals
-        </h3>
-        <NeumorphicBadge variant="primary" size="sm">Groq LLM + SHAP Synthesized</NeumorphicBadge>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <NeumorphicCard
-          v-for="item in insights.slice(0, 3)"
-          :key="item.id"
-          class="flex flex-col justify-between"
-        >
-          <div class="space-y-2">
-            <div class="flex items-center justify-between">
-              <NeumorphicBadge
-                :variant="item.impact_level === 'critical' || item.impact_level === 'high' ? 'danger' : 'warning'"
-                size="sm"
-              >
-                {{ item.impact_level.toUpperCase() }}
-              </NeumorphicBadge>
-              <span class="text-xs font-semibold text-neu-muted">{{ item.affected_department }}</span>
-            </div>
-            <h4 class="text-sm font-extrabold text-neu-text leading-snug">{{ item.title }}</h4>
-            <p class="text-xs text-neu-muted leading-relaxed">{{ item.description }}</p>
-          </div>
-
-          <div class="mt-4 pt-3 border-t border-neu-border/50">
-            <div class="text-[10px] font-bold text-neu-primary uppercase">Action</div>
-            <p class="text-xs font-medium text-neu-text">{{ item.recommendation }}</p>
-          </div>
-        </NeumorphicCard>
-      </div>
-    </div>
-
-    <!-- Charts Row -->
+    <!-- ROW 2: Balanced 2-Column (Workforce Risk Chart + Top 3 AI Insights) -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <NeumorphicCard class="lg:col-span-2">
-        <VChart :option="departmentChartOption" style="height: 340px" autoresize />
+      <!-- Left: Workforce Risk Chart (2 cols) -->
+      <NeumorphicCard class="lg:col-span-2 p-5">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-sm font-bold text-neu-text tracking-tight">Workforce Risk</h2>
+            <p class="text-xs text-neu-muted mt-0.5">Department staffing and risk levels</p>
+          </div>
+          <button
+            @click="router.push('/workforce')"
+            type="button"
+            class="text-xs font-semibold text-neu-primary hover:underline focus:outline-none"
+          >
+            View Details &rarr;
+          </button>
+        </div>
+        <VChart :option="workforceChartOption" style="height: 280px" autoresize />
       </NeumorphicCard>
 
-      <NeumorphicCard>
-        <VChart :option="turnoverRiskOption" style="height: 340px" autoresize />
-      </NeumorphicCard>
-    </div>
-
-    <!-- Attendance Trend & Quick Command Center -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <NeumorphicCard class="lg:col-span-2">
-        <VChart :option="attendanceTrendOption" style="height: 320px" autoresize />
-      </NeumorphicCard>
-
-      <NeumorphicCard class="flex flex-col justify-between">
+      <!-- Right: AI Insights (Top 3 only) -->
+      <NeumorphicCard class="p-5 flex flex-col justify-between">
         <div>
-          <h3 class="text-base font-extrabold text-neu-text mb-1">
-            Platform Quick Actions
-          </h3>
-          <p class="text-xs text-neu-muted mb-4">Direct shortcuts to critical workflows</p>
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-sm font-bold text-neu-text tracking-tight">AI Insights</h2>
+            <span class="text-[10px] font-semibold uppercase text-neu-muted">Top 3</span>
+          </div>
 
-          <div class="space-y-2.5">
-            <button
-              @click="router.push('/payrolls')"
-              class="w-full flex items-center justify-between p-3 rounded-2xl bg-neu-base shadow-neu-flat hover:shadow-neu-pressed transition-all duration-150 text-xs font-bold text-neu-text border border-white/50"
+          <div class="space-y-3">
+            <div
+              v-for="item in (insights.length ? insights.slice(0, 3) : [
+                { id: 1, title: 'High attrition risk increased in Engineering.', action: '/workforce' },
+                { id: 2, title: 'Attendance anomalies detected in Operations.', action: '/attendance' },
+                { id: 3, title: 'Payroll requires review for 4 employees.', action: '/payrolls' },
+              ])"
+              :key="item.id"
+              class="p-3 rounded-xl bg-neu-base/60 flex items-start justify-between gap-3 border border-neu-border/30"
             >
-              <div class="flex items-center space-x-2.5">
-                <span class="p-1.5 rounded-xl bg-amber-50 text-amber-600">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+              <div class="flex items-start space-x-2.5">
+                <span class="w-2 h-2 rounded-full bg-neu-primary mt-1.5 flex-shrink-0"></span>
+                <span class="text-xs text-neu-text font-medium leading-snug">
+                  {{ item.title }}
                 </span>
-                <span>Audit Payroll Anomalies</span>
               </div>
-              <span class="text-neu-muted">&rarr;</span>
-            </button>
-
-            <button
-              @click="router.push('/chatbot')"
-              class="w-full flex items-center justify-between p-3 rounded-2xl bg-neu-base shadow-neu-flat hover:shadow-neu-pressed transition-all duration-150 text-xs font-bold text-neu-text border border-white/50"
-            >
-              <div class="flex items-center space-x-2.5">
-                <span class="p-1.5 rounded-xl bg-blue-50 text-neu-primary">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                  </svg>
-                </span>
-                <span>Query Groq AI Assistant</span>
-              </div>
-              <span class="text-neu-muted">&rarr;</span>
-            </button>
-
-            <button
-              @click="router.push('/mlops')"
-              class="w-full flex items-center justify-between p-3 rounded-2xl bg-neu-base shadow-neu-flat hover:shadow-neu-pressed transition-all duration-150 text-xs font-bold text-neu-text border border-white/50"
-            >
-              <div class="flex items-center space-x-2.5">
-                <span class="p-1.5 rounded-xl bg-emerald-50 text-emerald-600">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-                  </svg>
-                </span>
-                <span>Inspect Data Drift (PSI)</span>
-              </div>
-              <span class="text-neu-muted">&rarr;</span>
-            </button>
+              <button
+                @click="router.push((item as any).action || '/workforce')"
+                type="button"
+                class="text-xs font-semibold text-neu-primary hover:underline flex-shrink-0 focus:outline-none"
+              >
+                View
+              </button>
+            </div>
           </div>
         </div>
 
-        <div class="mt-4 pt-4 border-t border-neu-border/50 text-[11px] text-neu-muted flex items-center justify-between">
-          <span>Enterprise Tenant: Acme Global</span>
-          <span class="font-mono text-emerald-600 font-bold">100% Operational</span>
+        <div class="pt-4 border-t border-neu-border/30 text-right">
+          <button
+            @click="router.push('/chatbot')"
+            type="button"
+            class="btn-accent px-4 py-2 text-xs font-semibold focus:outline-none inline-flex items-center space-x-1.5 cursor-pointer"
+          >
+            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            <span>Ask AI Assistant &rarr;</span>
+          </button>
+        </div>
+      </NeumorphicCard>
+    </div>
+
+    <!-- ROW 3: Compact Sections (Attrition Overview, Department Risk, Recent Alerts) -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <!-- 1. Attrition Overview -->
+      <NeumorphicCard class="p-5">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-neu-muted mb-3">Attrition Overview</h3>
+        <div class="space-y-2.5">
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-neu-text font-medium">Low Risk</span>
+            <span class="font-bold text-emerald-600">{{ workforceStats?.low_risk_count || 650 }} (65%)</span>
+          </div>
+          <div class="w-full h-1.5 bg-neu-base rounded-full overflow-hidden">
+            <div class="h-full bg-emerald-500 rounded-full" style="width: 65%"></div>
+          </div>
+
+          <div class="flex items-center justify-between text-xs pt-1">
+            <span class="text-neu-text font-medium">Medium Risk</span>
+            <span class="font-bold text-amber-600">{{ workforceStats?.medium_risk_count || 208 }} (21%)</span>
+          </div>
+          <div class="w-full h-1.5 bg-neu-base rounded-full overflow-hidden">
+            <div class="h-full bg-amber-500 rounded-full" style="width: 21%"></div>
+          </div>
+
+          <div class="flex items-center justify-between text-xs pt-1">
+            <span class="text-neu-text font-medium">Elevated Risk</span>
+            <span class="font-bold text-rose-600">{{ workforceStats?.high_risk_count || 142 }} (14%)</span>
+          </div>
+          <div class="w-full h-1.5 bg-neu-base rounded-full overflow-hidden">
+            <div class="h-full bg-rose-500 rounded-full" style="width: 14%"></div>
+          </div>
+        </div>
+      </NeumorphicCard>
+
+      <!-- 2. Department Risk -->
+      <NeumorphicCard class="p-5">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-neu-muted mb-3">Department Risk</h3>
+        <div class="space-y-2.5">
+          <div
+            v-for="dept in (departmentRisks.length ? departmentRisks.slice(0, 3) : [
+              { name: 'Engineering', high_risk_count: 24 },
+              { name: 'Sales', high_risk_count: 45 },
+              { name: 'Marketing', high_risk_count: 18 },
+            ])"
+            :key="(dept as any).name || (dept as any).department"
+            class="flex items-center justify-between text-xs"
+          >
+            <span class="font-medium text-neu-text">{{ (dept as any).name || (dept as any).department }}</span>
+            <span class="font-semibold text-rose-600">{{ dept.high_risk_count }} at risk</span>
+          </div>
+        </div>
+        <div class="mt-4 pt-3 border-t border-neu-border/30">
+          <button
+            @click="router.push('/workforce')"
+            type="button"
+            class="text-xs font-semibold text-neu-primary hover:underline focus:outline-none"
+          >
+            View all departments &rarr;
+          </button>
+        </div>
+      </NeumorphicCard>
+
+      <!-- 3. Recent Alerts -->
+      <NeumorphicCard class="p-5">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-neu-muted mb-3">Recent Alerts</h3>
+        <div class="space-y-2">
+          <div
+            v-for="alert in [
+              { id: 1, title: 'Payroll Overtime Spike', dept: 'Engineering', path: '/payrolls' },
+              { id: 2, title: 'Check-in Pattern Anomaly', dept: 'Operations', path: '/attendance' },
+              { id: 3, title: 'Turnover Signal', dept: 'Sales', path: '/workforce' },
+            ]"
+            :key="alert.id"
+            class="flex items-center justify-between text-xs py-1 cursor-pointer hover:opacity-80"
+            @click="router.push(alert.path)"
+          >
+            <span class="font-medium text-neu-text truncate">{{ alert.title }}</span>
+            <span class="text-[11px] text-neu-muted flex-shrink-0 ml-2">{{ alert.dept }}</span>
+          </div>
         </div>
       </NeumorphicCard>
     </div>
