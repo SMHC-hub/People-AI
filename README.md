@@ -1,199 +1,317 @@
-# PeopleAI — Intelligent Workforce Intelligence Platform
+# PeopleAI — Enterprise Workforce Intelligence & Employee Experience Platform
 
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)]()
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Vue 3](https://img.shields.io/badge/frontend-Vue%203%20%2B%20Tailwind-4FC08D.svg)](frontend/)
-[![Laravel 11](https://img.shields.io/badge/backend-Laravel%2011%20%28PHP%208.3%29-FF2D20.svg)](backend/)
-[![FastAPI](https://img.shields.io/badge/ml--service-FastAPI%20%2B%20XGBoost-009688.svg)](ml-service/)
-[![Groq AI](https://img.shields.io/badge/LLM%20Inference-Groq%20LPU%20%28120B%29-F55036.svg)](https://groq.com)
-[![Design System](https://img.shields.io/badge/UI%2FUX-Soft%20Neumorphism-2D6CDF.svg)]()
+[![Frontend](https://img.shields.io/badge/Frontend-Vue%203%20%7C%20TypeScript%20%7C%20TailwindCSS-4FC08D.svg)](frontend/)
+[![Backend](https://img.shields.io/badge/Backend-Laravel%2011%20%28PHP%208.3%29-FF2D20.svg)](backend/)
+[![ML Microservice](https://img.shields.io/badge/ML%20Service-FastAPI%20%7C%20XGBoost%20%7C%20SHAP-009688.svg)](ml-service/)
+[![Inference](https://img.shields.io/badge/LLM%20Inference-Groq%20LPU%20%28120B%29-F55036.svg)](https://groq.com)
+[![Design System](https://img.shields.io/badge/UI%2FUX-Soft%20Neumorphism-2D6CDF.svg)](frontend/src/style.css)
 
-> **PeopleAI** is an enterprise-grade B2B SaaS platform transforming workforce analytics into actionable intelligence. Engineered with XGBoost predictive turnover modeling, SHAP factor interpretability, Isolation Forest anomaly auditing, Groq-accelerated RAG policy assistants, continuous Population Stability Index (PSI) drift monitoring, and a soft neumorphic design system.
+> **PeopleAI** is a dual-engine enterprise workforce platform that bridges executive HR intelligence with employee self-service. Built on a tactile **Soft Neumorphic design system**, PeopleAI pairs predictive turnover modeling (XGBoost + SHAP), anomaly auditing (Isolation Forest), and policy intelligence (Groq LPU + ChromaDB RAG) with a self-service Employee Portal and automated credential provisioning for **1,000+ employees**.
 
 ---
 
-## 1. System Architecture
+## Architecture Overview
 
 ```mermaid
 flowchart TB
-    subgraph Client["Client Tier (SPA)"]
-        UI["Vue 3 + Vite + TailwindCSS<br/><b>Soft Neumorphism Design System</b><br/>(10 Core Dedicated Views)"]
+    subgraph Client["Client Tier (Single Page Application)"]
+        AdminPanel["👑 HR / Admin Intelligence Suite<br/>(10 Dedicated Management Modules)"]
+        EmpPortal["👤 Self-Service Employee Portal<br/>(6 Dedicated Personal Modules)"]
+        UIStyles["Soft Neumorphism Design System<br/>(Tailwind CSS + Custom Raised/Inset Shadows)"]
     end
 
-    subgraph API["Backend API Gateway (Laravel 11)"]
-        Sanctum["Laravel Sanctum (Auth & RBAC)"]
-        WorkforceCtrl["Workforce & Heatmap Controller"]
-        PayrollCtrl["Payroll & Anomaly Controller"]
-        ModelOpsCtrl["MLOps & Drift Controller"]
-        AuditLogCtrl["Audit Trail Controller"]
+    subgraph Gateway["Backend API Gateway (Laravel 11)"]
+        Sanctum["Laravel Sanctum (Role-Based Token Auth)"]
+        AdminCtrl["Admin Operations & ML Orchestration"]
+        PortalCtrl["Employee Portal Controller (Strictly Scoped)"]
+        CredService["Employee Credentials & CSV Sync Service"]
     end
 
-    subgraph Data["Persistence & Caching"]
-        MySQL[("MySQL 8.0<br/>Multi-Tenant Schema<br/>1,000+ Seeded Employees")]
-        Redis[("Redis 7.0<br/>Session & Rate Limiting")]
+    subgraph DataTier["Data Tier"]
+        DB[("Relational Database<br/>1,000 Seeded Employees<br/>Tenants, Leaves, Payrolls, Appraisals")]
+        CSV["employee_credentials.csv<br/>(Synchronized in Root, Backend, Frontend)"]
     end
 
-    subgraph ML["ML Microservice (FastAPI + Python 3.11)"]
-        XGB["XGBoost v2.1.0<br/>(ROC-AUC: 0.942)"]
-        SHAP["SHAP TreeExplainer<br/>(Local Factor Decomposition)"]
-        IsoForest["Isolation Forest<br/>(Payroll & Attendance Anomaly)"]
-        Drift["Continuous PSI Engine<br/>(Population Stability Index)"]
-        RAG["ChromaDB Vector Store<br/>(Document-Grounded RAG)"]
+    subgraph MLTier["AI / ML Microservice (FastAPI + Python 3.11)"]
+        XGB["XGBoost Turnover Predictor (ROC-AUC: 0.942)"]
+        SHAP["SHAP TreeExplainer (Local Attributions)"]
+        IsoForest["Isolation Forest Anomaly Detection"]
+        PSI["Population Stability Index (Drift Engine)"]
+        Chroma["ChromaDB Vector Store (Policy Embeddings)"]
     end
 
-    subgraph LLM["External Fast Inference"]
-        Groq["Groq LPU Cloud<br/>(GPT-OSS 120B / LLaMA 3.3)<br/>Sub-second Responses"]
+    subgraph Inference["Fast LLM Inference"]
+        Groq["Groq Cloud LPU<br/>(Sub-Second RAG Generation)"]
     end
 
-    UI --> Sanctum
-    Sanctum --> WorkforceCtrl
-    Sanctum --> PayrollCtrl
-    Sanctum --> ModelOpsCtrl
-    Sanctum --> AuditLogCtrl
+    AdminPanel --> Sanctum
+    EmpPortal --> Sanctum
+    Sanctum --> AdminCtrl
+    Sanctum --> PortalCtrl
+    AdminCtrl --> DB
+    PortalCtrl --> DB
+    AdminCtrl --> CredService
+    CredService --> CSV
 
-    WorkforceCtrl --> MySQL
-    PayrollCtrl --> MySQL
-    AuditLogCtrl --> MySQL
-    Sanctum --> Redis
-
-    PayrollCtrl --> IsoForest
-    WorkforceCtrl --> XGB
-    ModelOpsCtrl --> Drift
-    UI --> RAG
-    RAG --> Groq
+    AdminCtrl --> XGB
+    AdminCtrl --> IsoForest
+    AdminCtrl --> PSI
     XGB --> SHAP
+    AdminPanel --> Chroma
+    Chroma --> Groq
 ```
 
 ---
 
-## 2. Core Functional Modules
+## 1. Two Dedicated Portals: Admin Suite & Employee Panel
 
-PeopleAI delivers 10 dedicated, production-ready modules connected to real enterprise data:
+PeopleAI provides tailored experiences based on authenticated roles:
 
-1. **Executive Dashboard (`/`)**: High-density KPI cards (1,000 corporate employees, daily attendance rate, turnover risk breakdown, health index 88/100), 30-day attendance trend, and live AI insight signals.
-2. **Workforce Risk Heatmap (`/workforce`)**: Department-level attrition risk matrix across 7 business divisions (R&D, Sales, Engineering, Marketing, Operations, Finance, HR), promotion stagnation latency, and satisfaction metrics.
-3. **Employee Intelligence Directory (`/employees` & `/employees/:id`)**: Searchable roster with real-time filters, individual profile dossiers, circular risk probability gauges (0-100%), and granular **SHAP factor contributions** (e.g. Promotion Stagnation +0.48, Job Satisfaction +0.32).
-4. **Attendance & Anomaly Queue (`/attendance`)**: Daily timesheet logs with Isolation Forest outlier flags, calibrated anomaly scores, and status filters.
-5. **Leave & PTO Management (`/leaves`)**: Department PTO balances, pending approval queues, and one-click manager approvals.
-6. **Payroll Intelligence & Anomaly Engine (`/payrolls`)**: Monthly disbursement auditing ($7.45M monthly payout) with automated detection of overtime spikes ($>3\sigma$), duplicate disbursements, and abnormal bonuses, complete with auditor justification modals.
-7. **Performance & Appraisal Intelligence (`/performances`)**: Bell-curve rating distributions (1.0 to 5.0), goal completion rates, and promotion recommendation telemetry.
-8. **AI HR Assistant (`/chatbot`)**: Groq-powered RAG assistant with policy grounding, verifiable source citations (e.g., *[Source: Professional Development Policy, Sec 3.2]*), and prompt shortcuts.
-9. **MLOps Lifecycle & Governance (`/mlops`)**: Model registry with Champion/Candidate versioning, live Population Stability Index (PSI) drift meters across 4 core features, benchmark comparison tables, and one-click retraining triggers.
-10. **Enterprise Settings & RBAC (`/settings`)**: Multi-tenant parameters, SOC-2 role-based access control matrix, and live tamper-evident audit logs.
+```
+                                  [Login Page]
+                                       │
+                ┌──────────────────────┴──────────────────────┐
+                ▼                                             ▼
+     👑 Admin (Full Access)                       👤 Employee Portal
+   (admin@hranalytics.com)                     (1,000 Active Employees)
+                │                                             │
+                ▼                                             ▼
+   Executive Dashboard (`/`)                   Employee Overview (`/portal`)
+   • Workforce Risk Heatmap                     • Live Punch Clock (In/Out)
+   • 1,000 Employee Directory                   • My Attendance Logs
+   • Timesheets & Isolation Forest              • Leave Entitlements & Requests
+   • Payroll Audit & 3σ Anomaly Engine          • Itemized Payslips & Compensation
+   • Appraisal Bell Curves & Goals              • Performance & Competencies
+   • Groq Policy Chatbot                        • Employee ID & Profile Dossier
+   • MLOps & Continuous PSI Drift
+   • RBAC & Tamper-Evident Audit
+```
 
 ---
 
-## 3. Quick Start & Local Development
+## 2. 👑 HR / Admin Intelligence Suite
 
-### 3.1 Prerequisites
-* Docker & Docker Compose
-* Git
+Designed for People Operations leaders, HR executives, and workforce data scientists:
 
-### 3.2 One-Command Startup
+### 2.1 Executive Dashboard (`/`)
+- **Key Performance Indicators**: Total active workforce (1,000 corporate employees), real-time attendance rate, attrition risk distribution (Low, Medium, High), and workforce health index (88/100).
+- **30-Day Attendance Velocity**: Interactive attendance trend visualizer with anomaly flags.
+- **AI Strategic Alerts**: Real-time actionable notifications regarding compensation stagnation, flight risk clusters, and upcoming review milestones.
+
+### 2.2 Workforce Risk Heatmap (`/workforce`)
+- **Division-Level Turnover Matrix**: Real-time risk scoring across 7 business divisions (R&D, Engineering, Sales, Marketing, Operations, Finance, and Human Resources).
+- **Driver Diagnostics**: Identifies root causes of turnover risk including promotion stagnation, compensation compression, and overtime fatigue.
+
+### 2.3 Employee Intelligence Directory (`/employees` & `/employees/:id`)
+- **Searchable Enterprise Roster**: Full 1,000-employee directory with live search, department filters, and risk level tags.
+- **Granular Profile Dossiers**: Deep-dive employee views displaying contact information, employment history, attendance logs, and compensation structure.
+- **SHAP Factor Decomposition**: Circular turnover probability gauge (0–100%) paired with individual positive and negative SHAP feature contributions (e.g., *Promotion Stagnation +0.48*, *Job Satisfaction +0.32*).
+- **Credentials CSV Export**: One-click download button in the toolbar allowing administrators to instantly export the current `employee_credentials.csv`.
+
+### 2.4 Attendance & Anomaly Auditing (`/attendance`)
+- **Organization-Wide Timesheets**: Filterable table with human-readable timestamps (`13 Sep 2026`, `08:45 AM`) and computed duration hours.
+- **Machine Learning Anomaly Detection**: Highlights attendance outliers identified by the Isolation Forest model with calibrated anomaly severity scores.
+
+### 2.5 Leave & Time-Off Management (`/leaves`)
+- **Department PTO Balances**: Live visibility into team vacation and sick leave utilization.
+- **Approval Queue**: Administrative approval and rejection workflow for employee leave submissions with automated status updating.
+
+### 2.6 Payroll Intelligence & Anomaly Engine (`/payrolls`)
+- **Disbursement Auditing**: Aggregated monthly payroll analysis ($7.45M monthly payout).
+- **Dual-Layer Anomaly Detection**:
+  - *Isolation Forest*: Multidimensional statistical outlier scoring across salary, overtime hours, and bonuses.
+  - *Heuristic Safeguards*: Flags disbursements exceeding 3 standard deviations ($> 3\sigma$) above department medians and catches accidental duplicate payments within the same cycle.
+- **Audit Justification**: Interactive auditor review modals with mandatory rationale logging.
+
+### 2.7 Performance & Appraisal Intelligence (`/performances`)
+- **Rating Distributions**: Company-wide bell-curve visualization comparing review scores (1.0 to 5.0).
+- **Goal Completion Telemetry**: Tracking milestone achievement rates across technical, operational, and strategic goals.
+- **Promotion Pipeline**: Identifies high-performing talent recommended for promotion based on objective appraisals.
+
+### 2.8 Groq RAG HR Assistant (`/chatbot`)
+- **Policy-Grounded AI**: Vector-search RAG assistant backed by ChromaDB and accelerated by Groq LPU inference (`openai/gpt-oss-120b`).
+- **Verifiable Citations**: Every answer includes clickable policy references (e.g., *[Source: Professional Development Policy, Sec 3.2]*).
+- **Suggested Queries**: One-click quick prompts covering bereavement leave, healthcare coverage, and tuition reimbursement.
+
+### 2.9 MLOps Lifecycle & Governance (`/mlops`)
+- **Model Registry**: Champion vs. Candidate model lineage tracking with live performance metrics (ROC-AUC, Precision, Recall, F1).
+- **Continuous PSI Drift Monitoring**: Real-time Population Stability Index meters across 4 primary features to flag silent production data drift before model degradation occurs.
+- **Governance Actions**: One-click Candidate promotion and manual model retraining triggers.
+
+### 2.10 Enterprise Settings & Audit Log (`/settings`)
+- **Role-Based Access Control (RBAC)**: Fine-grained permissions matrix across Admin, Manager, and Employee roles.
+- **Tamper-Evident Audit Trail**: Real-time logging of user logins, payroll audits, leave approvals, and employee profile modifications.
+
+---
+
+## 3. 👤 Self-Service Employee Portal (`/portal/*`)
+
+A dedicated self-service panel tailored for employees to manage their work life, attendance, and compensation with zero access to peer data or executive analytics:
+
+### 3.1 Personal Overview Dashboard (`/portal`)
+- **Live Punch Clock**: Dynamic real-time clock displaying current system time, today's check-in/out status, and one-click **Clock In** and **Clock Out** buttons.
+- **Leave Entitlements**: Instant remaining balances for Annual Leave, Sick Leave, and Personal Time-Off.
+- **Latest Payslip Snapshot**: Itemized net take-home pay, base salary, and deduction summaries.
+- **Recent Punch Records**: Clean tabular log of recent work sessions and hours completed.
+- **Performance Rating**: Summary of current quarterly performance score.
+
+### 3.2 My Attendance (`/portal/attendance`)
+- **Time Clock Widget**: One-click check-in and check-out with instant local time capture.
+- **SQLite Safe**: Optimized timestamp matching preventing unique constraint collisions or duplicate check-in exceptions.
+- **Attendance Log**: Formatted chronological table displaying dates (e.g., `13 Sep 2026`), check-in/out timestamps, hours worked (e.g., `8h 38m`), and status badges (On Time, Late, Early Departure).
+
+### 3.3 My Leaves & Time-Off (`/portal/leaves`)
+- **Balance Cards**: Remaining and utilized days across Annual, Sick, and Personal leave categories.
+- **Leave Request Modal**: Interactive modal allowing employees to pick leave categories, date ranges, and submit justifications directly to their manager.
+- **Request History**: Status tracking for all pending, approved, and rejected leave applications.
+
+### 3.4 My Payslips & Compensation (`/portal/payrolls`)
+- **Financial Summary**: Highlighting monthly base salary, latest take-home disbursement, and pay cycle dates.
+- **Statement Archive**: Chronological listing of all issued monthly payslips.
+- **Interactive Payslip Modal**: Detailed breakdown of earnings (Base Pay, Overtime, Bonuses) and itemized deductions (Federal Income Tax, Social Security, Health Insurance) with net payout confirmation.
+
+### 3.5 My Performance Appraisals (`/portal/performance`)
+- **Quarterly Scorecard**: Overall review score (e.g., `4.0 / 5.0 — Exceeds Expectations`).
+- **Core Competency Visualizer**: 4-dimensional breakdown across:
+  - *Technical Excellence & Execution*
+  - *System Reliability & Architecture*
+  - *Cross-Functional Collaboration*
+  - *Mentorship & Initiative*
+- **Appraisal Archives**: Historical performance review notes and manager feedback from past quarters.
+
+### 3.6 My Employee Profile (`/portal/profile`)
+- **Employee Identification Card**: Badge featuring employee ID, official photo/avatar, full name, and organizational position.
+- **Employment Hierarchy**: Department, reporting lines, job title, position level, and office location.
+- **Contact & Emergency Details**: Personal email, work phone, and emergency dispatch contact.
+
+---
+
+## 4. 1,000 Employees Credentials & Automated Provisioning
+
+Every employee in the organization has an active user account and credentials ready for self-service access:
+
+### 4.1 Master Credentials CSV (`employee_credentials.csv`)
+A standardized CSV file containing **1,001 rows** (1 header + 1,000 active employees) maintained across:
+1. `l:\Projects\People-AI\employee_credentials.csv` (Root Workspace)
+2. `l:\Projects\People-AI\backend\public\employee_credentials.csv` (Backend Public)
+3. `l:\Projects\People-AI\frontend\public\employee_credentials.csv` (Frontend Public)
+
+**CSV Schema**:
+```csv
+Employee Code,Full Name,Email,Password,Role,Department,Position,Location,Portal URL
+EMP00001,"Sean Davis",sean.davis1@hranalytics.com,password,employee,Engineering,"Software Engineer","New York Office",http://localhost:3000/login
+EMP00002,"Marcus Vance",marcus.vance2@hranalytics.com,password,employee,Product,"Product Manager","London Branch",http://localhost:3000/login
+...
+EMP01000,"Taylor Brooks",taylor.brooks1000@hranalytics.com,password,employee,Finance,"Financial Analyst","Tokyo Hub",http://localhost:3000/login
+```
+
+### 4.2 Automated Provisioning on New Hire Creation
+When HR creates a new employee via `POST /api/employees` (or via the Admin UI):
+1. **User Account Auto-Creation**: A corresponding `User` account is automatically provisioned with role `employee` and a hashed password (custom or default `password`).
+2. **Entity Association**: The new employee record is linked directly via `user_id`.
+3. **CSV Auto-Append**: The `EmployeeCredentialsService` automatically appends the newly created employee's credentials to all three CSV file locations without requiring server restarts.
+
+### 4.3 Manual Re-Sync CLI Command
+Administrators can re-sync or regenerate all employee credentials at any time:
+```bash
+php artisan employees:sync-credentials
+# Or with a custom default password:
+php artisan employees:sync-credentials --password="SecurePassword2026!"
+```
+
+---
+
+## 5. Technology Stack
+
+| Layer | Technologies | Role in Platform |
+| :--- | :--- | :--- |
+| **Frontend UI** | Vue 3, Vite, TypeScript, TailwindCSS, Pinia | Reactive SPA, Soft Neumorphic Design System, Dual Portal Routing |
+| **Backend API** | Laravel 11, PHP 8.3, Laravel Sanctum, SQLite / MySQL | REST API Gateway, RBAC Guards, Scoped Portal Endpoints, CLI Commands |
+| **ML Microservice** | FastAPI, Python 3.11, Uvicorn | High-throughput predictive scoring & vector search |
+| **Turnover AI** | XGBoost 2.1.0, Scikit-Learn | Supervised gradient-boosted classification (ROC-AUC: 0.942) |
+| **Explainable AI** | SHAP (SHapley Additive exPlanations) | Local feature attribution decomposition for each employee |
+| **Anomaly Engine** | Isolation Forest | Multidimensional outlier detection for payroll and attendance |
+| **Drift Monitoring** | Population Stability Index (PSI) | Real-time production distribution drift calculation |
+| **Vector Database** | ChromaDB | Embeddings store for company policies and HR documents |
+| **LLM Inference** | Groq Cloud LPU (`openai/gpt-oss-120b`) | Sub-second RAG response generation with source citations |
+
+---
+
+## 6. Quick Start & Local Setup
+
+### 6.1 Prerequisites
+- **Node.js** (v18+) & **npm**
+- **PHP** (v8.2+) & **Composer**
+- **Python** (v3.10+)
+
+### 6.2 Installation & Startup
 
 ```bash
 # 1. Clone the repository
-cd ai-hr-analytics
+git clone https://github.com/saudakbar484/People-AI.git
+cd People-AI
 
-# 2. Launch all 5 containers via Docker Compose
-docker compose up -d
+# 2. Backend Setup (Laravel 11)
+cd backend
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate --force
+php artisan db:seed --force
+php artisan serve --host 0.0.0.0 --port 8000 &
 
-# 3. Run database migrations and the deterministic 1,000-employee seeder
-docker compose exec backend php artisan migrate --force
-docker compose exec backend php artisan db:seed --force
+# 3. ML Service Setup (FastAPI + Python)
+cd ../ml-service
+python -m venv .venv
+# Activate venv (.venv\Scripts\activate on Windows or source .venv/bin/activate on Linux/Mac)
+pip install -r requirements.txt
+uvicorn app.main:app --host 0.0.0.0 --port 8001 &
+
+# 4. Frontend Setup (Vue 3 + Vite)
+cd ../frontend
+npm install
+npm run dev
 ```
 
-### 3.3 Default Service Endpoints
-| Component | URL | Description |
+### 6.3 Access Endpoints
+| Component | Local URL | Description |
 | :--- | :--- | :--- |
-| **Frontend Web App** | `http://localhost:3000` | Vue 3 + Tailwind Neumorphic Application |
+| **Web Application** | `http://localhost:3000` | Soft Neumorphic Client (Admin Suite & Employee Portal) |
 | **Backend REST API** | `http://localhost:8000/api` | Laravel 11 Gateway & Controllers |
-| **ML Inference Service** | `http://localhost:8001/docs` | FastAPI Swagger Documentation |
-| **MySQL Database** | `localhost:3306` | MySQL 8.0 Primary Store |
-| **Redis Cache** | `localhost:6379` | In-Memory Cache & Session Broker |
-
-### 3.4 Seeded Demo Personas
-You can authenticate instantly using the built-in Persona Switcher on the login screen or via credentials:
-
-| Persona | Email | Password | Access Scope |
-| :--- | :--- | :--- | :--- |
-| **Administrator** | `admin@hranalytics.com` | `password` | Complete access, model promotion, raw audit trail |
-| **HR Manager** | `hrmanager@hranalytics.com` | `password` | Employee management, payroll audit, PTO approvals |
-| **HR Analyst** | `hranalyst@hranalytics.com` | `password` | Read-only dashboards, reports, and SHAP scores |
-| **Employee** | `employee@hranalytics.com` | `password` | Self-service attendance, PTO requests, policy chat |
+| **ML Microservice Docs** | `http://localhost:8001/docs` | FastAPI Swagger OpenAPI Documentation |
+| **Credentials CSV** | `http://localhost:3000/employee_credentials.csv` | Direct download of 1,000 employee credentials |
 
 ---
 
-## 4. Machine Learning & MLOps Methodology
+## 7. Default Authentication Personas
 
-### 4.1 XGBoost + SHAP TreeExplainer
-Traditional employee turnover models rely on simplistic logistic regressions that fail to capture non-linear interactions. PeopleAI deploys **XGBoost 3.2.0** tuned with 50 estimators, max depth 3, and evaluated with **SHAP TreeExplainer**:
-* **ROC-AUC**: **0.942**
-* **F1-Score**: **0.891**
-* **Explainability**: Every prediction outputs positive and negative risk factor attributions, ensuring HR managers have actionable, legally compliant justifications.
+Use the Persona buttons on the login screen or enter credentials directly:
 
-### 4.2 Ensemble Payroll Anomaly Detection
-An ensemble combining:
-1. **Unsupervised Isolation Forest**: Isolates multidimensional statistical outliers across base compensation, overtime hours, bonus ratios, and net pay.
-2. **Deterministic Heuristics**: Flags disbursements exceeding 3 standard deviations ($> 3\sigma$) above department medians or matching duplicate payouts within the same calendar month.
-
-### 4.3 Continuous Population Stability Index (PSI)
-To detect silent data distribution drift between training baseline ($B$) and live production queries ($A$):
-
-$$\text{PSI} = \sum_{k=1}^{K} \left( P(A_k) - P(B_k) \right) \times \ln\left( \frac{P(A_k)}{P(B_k)} \right)$$
-
-* $\text{PSI} < 0.10$: Healthy & Stable (No drift)
-* $0.10 \le \text{PSI} \le 0.25$: Moderate drift (Queue for scheduled retraining)
-* $\text{PSI} > 0.25$: Significant shift (Automated retraining triggered)
-
-### 4.4 RAG Assistant & Groq LPU Inference
-The AI HR Assistant uses Groq's low-latency inference endpoint (`openai/gpt-oss-120b`) combined with ChromaDB vector search. Quantitative RAG evaluation benchmarks:
-* **Retrieval Hit Rate**: **100.0%**
-* **Context Precision**: **80.0%**
-* **Answer Faithfulness**: **76.7%**
-* **Answer Relevance**: **82.0%**
-* **Average Inference Latency**: **1.21s**
+| Persona | Email | Password | Target Route | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| **👑 Admin (Full Access)** | `admin@hranalytics.com` | `password` | `/` | Executive intelligence, MLOps, audit logs, employee directory |
+| **👤 Employee Portal** | `employee@hranalytics.com` | `password` | `/portal` | Self-service attendance, punch clock, leave requests, payslips |
+| **Any CSV Employee** | *(Check `employee_credentials.csv`)* | `password` | `/portal` | 1,000 distinct accounts (e.g., `sean.davis1@hranalytics.com`) |
 
 ---
 
-## 5. Design System: Soft Neumorphism
+## 8. Soft Neumorphism Design System
 
-PeopleAI adheres to a tactile, modern Soft Neumorphic aesthetic:
-* **Base Background**: `#E8ECF1`
-* **Surface Layer**: `#F5F7FA`
-* **Primary Accent**: `#2D6CDF` (Corporate Trust Blue)
-* **Shadow Elevation**:
-  * Flat: `6px 6px 14px rgba(163, 177, 198, 0.35), -6px -6px 14px rgba(255, 255, 255, 0.85)`
-  * Inset: `inset 4px 4px 8px rgba(163, 177, 198, 0.40), inset -4px -4px 8px rgba(255, 255, 255, 0.90)`
-  * Raised: `10px 10px 24px rgba(163, 177, 198, 0.45), -10px -10px 24px rgba(255, 255, 255, 0.95)`
-* **Typography**: Clean `Inter` font stack with tabular monospace numerals for financial figures.
-* **Global Navigation**: Instant search overlay triggered via `Ctrl + K`.
-
----
-
-## 6. Testing & Quality Assurance
-
-```bash
-# Run ML Microservice Pytest Suite (27 Unit Tests)
-docker compose exec ml-service pytest
-
-# Run Frontend Type-Check & Production Build
-docker compose exec frontend npm run build
-
-# Run RAG Quantitative Benchmark Evaluation
-docker compose exec ml-service python app/rag/rag_eval.py
-```
+PeopleAI employs an ergonomic Soft Neumorphic aesthetic:
+- **Base Canvas**: `#E8ECF1` (Soft Slate Neutral)
+- **Surface Elevation**: `#F5F7FA` (Slightly Raised Canvas)
+- **Primary Brand**: `#2D6CDF` (Corporate Trust Indigo/Blue)
+- **Muted Elements**: `#64748B` (Refined Slate Neutral)
+- **Accent Tokens**: `#10B981` (Emerald / Low Risk / Clocked In), `#F59E0B` (Amber / Warning), `#EF4444` (Rose / Anomaly / High Risk)
+- **Shadow Elevations**:
+  - `shadow-neu-flat`: `6px 6px 14px rgba(163, 177, 198, 0.35), -6px -6px 14px rgba(255, 255, 255, 0.85)`
+  - `shadow-neu-inset`: `inset 4px 4px 8px rgba(163, 177, 198, 0.40), inset -4px -4px 8px rgba(255, 255, 255, 0.90)`
+  - `shadow-neu-raised`: `10px 10px 24px rgba(163, 177, 198, 0.45), -10px -10px 24px rgba(255, 255, 255, 0.95)`
+- **Keyboard Shortcut**: Press `Ctrl + K` (or `Cmd + K`) anywhere to summon the global Command Palette.
 
 ---
 
-## 7. Responsible AI & Compliance
-
-* **Algorithmic Bias Mitigation**: Demographic parity audits ensure model predictions are not conditioned on protected attributes (gender, ethnicity, age).
-* **Explainability First**: No adverse employment action recommendation is displayed without transparent SHAP factor attribution.
-* **SOC-2 & ISO 27001 Readiness**: Encrypted at rest (AES-256) and in transit (TLS 1.3), accompanied by an immutable audit trail (`audit_logs`) tracking administrative actions, approvals, and model lineage.
-
----
-
-## 8. License
+## 9. License
 
 This project is open source and available under the [MIT License](LICENSE).
