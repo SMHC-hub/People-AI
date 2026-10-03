@@ -1,4 +1,4 @@
-# PeopleAI — Enterprise Workforce Intelligence & Employee Experience Platform
+﻿# PeopleAI — Enterprise Workforce Intelligence & Employee Experience Platform
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Frontend](https://img.shields.io/badge/Frontend-Vue%203%20%7C%20TypeScript%20%7C%20TailwindCSS-4FC08D.svg)](frontend/)
@@ -249,7 +249,7 @@ php artisan employees:sync-credentials --password="SecurePassword2026!"
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/saudakbar484/People-AI.git
+git clone https://github.com/SMHC-hub/People-AI.git
 cd People-AI
 
 # 2. Backend Setup (Laravel 11)
@@ -315,3 +315,4 @@ PeopleAI employs an ergonomic Soft Neumorphic aesthetic:
 ## 9. License
 
 This project is open source and available under the [MIT License](LICENSE).
+
