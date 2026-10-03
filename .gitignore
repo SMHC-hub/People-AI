@@ -102,3 +102,10 @@ htmlcov/
 *.sqlite3
 chroma/
 scratch/
+
+# ==========================
+# Generated Credentials & Exported CSVs
+# ==========================
+employee_credentials.csv
+**/employee_credentials.csv
+*.credentials.csv
