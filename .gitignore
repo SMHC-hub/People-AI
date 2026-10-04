@@ -106,6 +106,10 @@ scratch/
 # ==========================
 # Generated Credentials & Exported CSVs
 # ==========================
+*.csv
 employee_credentials.csv
 **/employee_credentials.csv
 *.credentials.csv
+backend/storage/app/credentials/
+backend/public/*.csv
+frontend/public/*.csv

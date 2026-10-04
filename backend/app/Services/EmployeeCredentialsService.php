@@ -9,14 +9,12 @@ use Illuminate\Support\Facades\Hash;
 class EmployeeCredentialsService
 {
     /**
-     * Paths where the CSV file should be maintained.
+     * Paths where the CSV file should be maintained (strictly private & gitignored).
      */
     public static function getCsvPaths(): array
     {
         return [
-            base_path('../employee_credentials.csv'),                 // Root project directory
-            public_path('employee_credentials.csv'),                  // Backend public
-            base_path('../frontend/public/employee_credentials.csv'), // Frontend public
+            storage_path('app/credentials/employee_credentials.csv'), // Private backend storage (strictly gitignored)
         ];
     }
 
@@ -29,7 +27,7 @@ class EmployeeCredentialsService
             'Employee ID',
             'Full Name',
             'Corporate Email',
-            'Default Password',
+            'Account Status',
             'System Role',
             'Department',
             'Position Title',
@@ -76,7 +74,7 @@ class EmployeeCredentialsService
                 $emp->employee_code,
                 $emp->first_name . ' ' . $emp->last_name,
                 $emp->email,
-                $defaultPassword,
+                'Active (Auth Managed)',
                 'employee',
                 $emp->department?->name ?? 'Engineering',
                 $emp->position?->title ?? 'Software Engineer',
@@ -102,7 +100,7 @@ class EmployeeCredentialsService
             $employee->employee_code,
             $employee->first_name . ' ' . $employee->last_name,
             $employee->email,
-            $password,
+            'Active (Auth Managed)',
             'employee',
             $employee->department?->name ?? 'Engineering',
             $employee->position?->title ?? 'Software Engineer',

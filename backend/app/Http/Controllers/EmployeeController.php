@@ -91,7 +91,7 @@ class EmployeeController extends Controller
         // Append to employee credentials CSV
         app(EmployeeCredentialsService::class)->appendEmployeeCredentials($employee, $password);
 
-        return $this->success($employee, 'Employee created successfully and credentials added to employee_credentials.csv', 201);
+        return $this->success($employee, 'Employee created successfully and user account provisioned', 201);
     }
 
     /**

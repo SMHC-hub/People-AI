@@ -12,21 +12,21 @@ class SyncEmployeeCredentialsCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'employees:sync-credentials {--password=password : Default password for generated accounts}';
+    protected $signature = 'employees:sync-credentials {--password= : Default password for generated accounts}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Provision User login accounts for all employees and generate/sync employee_credentials.csv';
+    protected $description = 'Provision User login accounts for all employees and sync directory';
 
     /**
      * Execute the console command.
      */
     public function handle(EmployeeCredentialsService $service): int
     {
-        $password = $this->option('password') ?: 'password';
+        $password = $this->option('password') ?: env('SEED_EMPLOYEE_PASSWORD', 'password');
         $this->info("Provisioning credentials for all employees with default password: '{$password}'...");
 
         $count = $service->syncAllEmployees($password);

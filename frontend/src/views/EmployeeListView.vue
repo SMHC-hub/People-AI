@@ -85,6 +85,27 @@ function handleRowClick(id: number) {
   router.push({ name: 'employee-detail', params: { id } })
 }
 
+function exportDirectory() {
+  if (!store.employees || store.employees.length === 0) return
+  const headers = ['Employee Code', 'Full Name', 'Email', 'Department', 'Position', 'Status']
+  const rows = store.employees.map((e: any) => [
+    e.employee_code || `EMP${String(e.id).padStart(5, '0')}`,
+    `"${e.first_name} ${e.last_name}"`,
+    e.email,
+    `"${getDepartmentName(e)}"`,
+    `"${getRoleTitle(e)}"`,
+    e.status || 'active',
+  ])
+  const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((r: any) => r.join(','))].join('\n')
+  const encodedUri = encodeURI(csvContent)
+  const link = document.createElement('a')
+  link.setAttribute('href', encodedUri)
+  link.setAttribute('download', 'employee_directory.csv')
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}
+
 watch([search, departmentFilter, statusFilter], () => {
   page.value = 1
   fetchData()
@@ -105,17 +126,17 @@ onMounted(fetchData)
     >
       <template #action>
         <div class="flex items-center space-x-2">
-          <a
-            href="/employee_credentials.csv"
-            download="employee_credentials.csv"
+          <button
+            @click="exportDirectory"
+            type="button"
             class="btn-primary flex items-center space-x-1.5 px-3.5 py-1.5 text-xs font-semibold focus:outline-none"
-            title="Download CSV of all 1,000 employee login credentials"
+            title="Export current employee directory to CSV"
           >
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            <span>Credentials CSV</span>
-          </a>
+            <span>Export Directory</span>
+          </button>
           <button
             @click="fetchData"
             type="button"

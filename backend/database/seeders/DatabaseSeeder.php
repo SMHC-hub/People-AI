@@ -117,11 +117,14 @@ class DatabaseSeeder extends Seeder
         }
 
         // 5. Enterprise Users with RBAC Roles
+        $defaultAdminPassword = env('SEED_ADMIN_PASSWORD', 'password');
+        $defaultEmployeePassword = env('SEED_EMPLOYEE_PASSWORD', 'password');
+
         $users = [
             [
                 'name' => 'Admin User',
-                'email' => 'admin@hranalytics.com',
-                'password' => Hash::make('password'),
+                'email' => env('SEED_ADMIN_EMAIL', 'admin@hranalytics.com'),
+                'password' => Hash::make($defaultAdminPassword),
                 'role' => 'admin',
                 'tenant_id' => $tenantId,
                 'email_verified_at' => now(),
@@ -129,7 +132,7 @@ class DatabaseSeeder extends Seeder
             [
                 'name' => 'Sarah Chen (HR Director)',
                 'email' => 'sarah.chen@hranalytics.com',
-                'password' => Hash::make('password'),
+                'password' => Hash::make($defaultAdminPassword),
                 'role' => 'hr_manager',
                 'tenant_id' => $tenantId,
                 'email_verified_at' => now(),
@@ -137,7 +140,7 @@ class DatabaseSeeder extends Seeder
             [
                 'name' => 'David Miller (People Analyst)',
                 'email' => 'david.miller@hranalytics.com',
-                'password' => Hash::make('password'),
+                'password' => Hash::make($defaultAdminPassword),
                 'role' => 'hr_analyst',
                 'tenant_id' => $tenantId,
                 'email_verified_at' => now(),
@@ -145,7 +148,7 @@ class DatabaseSeeder extends Seeder
             [
                 'name' => 'Marcus Vance (Engineering VP)',
                 'email' => 'marcus.vance@hranalytics.com',
-                'password' => Hash::make('password'),
+                'password' => Hash::make($defaultAdminPassword),
                 'role' => 'manager',
                 'tenant_id' => $tenantId,
                 'email_verified_at' => now(),
@@ -153,7 +156,7 @@ class DatabaseSeeder extends Seeder
             [
                 'name' => 'Emily Watson (Staff Engineer)',
                 'email' => 'emily.watson@hranalytics.com',
-                'password' => Hash::make('password'),
+                'password' => Hash::make($defaultEmployeePassword),
                 'role' => 'employee',
                 'tenant_id' => $tenantId,
                 'email_verified_at' => now(),
@@ -161,7 +164,7 @@ class DatabaseSeeder extends Seeder
             [
                 'name' => 'Emily Watson',
                 'email' => 'employee@hranalytics.com',
-                'password' => Hash::make('password'),
+                'password' => Hash::make($defaultEmployeePassword),
                 'role' => 'employee',
                 'tenant_id' => $tenantId,
                 'email_verified_at' => now(),
@@ -689,7 +692,7 @@ class DatabaseSeeder extends Seeder
             AuditLog::create($al);
         }
 
-        // 13. Provision User accounts for all employees and sync credentials CSV
-        app(\App\Services\EmployeeCredentialsService::class)->syncAllEmployees('password');
+        // 13. Provision User accounts for all employees and sync directory
+        app(\App\Services\EmployeeCredentialsService::class)->syncAllEmployees($defaultEmployeePassword);
     }
 }
